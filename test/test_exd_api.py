@@ -13,6 +13,7 @@ import ods_external_data_pb2 as oed
 from external_data_reader import ExternalDataReader
 from google.protobuf.json_format import MessageToJson
 
+
 class TestExdApi(unittest.TestCase):
     log = logging.getLogger(__name__)
 
