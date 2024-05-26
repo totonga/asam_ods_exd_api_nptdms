@@ -26,7 +26,7 @@ class TestDataTypes(unittest.TestCase):
 
     def _get_example_file_path(self, file_name):
         example_file_path = pathlib.Path.joinpath(pathlib.Path(__file__).parent.resolve(), '..', 'data', file_name)
-        return pathlib.Path(example_file_path).absolute().resolve().as_uri().replace('///', '//')
+        return pathlib.Path(example_file_path).absolute().resolve().as_uri()
 
     def test_datatype(self):
         with tempfile.TemporaryDirectory() as temporary_directory_name:
@@ -55,7 +55,7 @@ class TestDataTypes(unittest.TestCase):
 
             service = ExternalDataReader()
             handle = service.Open(oed.Identifier(
-                url = Path(file_path).resolve().as_uri().replace('///', '//'),
+                url = Path(file_path).resolve().as_uri(),
                 parameters = ""), None)
             try:
                 structure = service.GetStructure(oed.StructureRequest(handle=handle), None)
