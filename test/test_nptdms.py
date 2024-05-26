@@ -20,7 +20,8 @@ class TestStringMethods(unittest.TestCase):
         self.log.info(str(file_path).encode('utf-8'))
 
         with TdmsFile.open(file_path) as tdms_file:
-            self.log.info(f"{tdms_file.properties["name"]}")
+            file_name_val = tdms_file.properties["name"]
+            self.log.info(f"{file_name_val}")
             for name, value in tdms_file.properties.items():
                 self.log.info("f: {0}: {1}".format(name, value))
 
@@ -45,7 +46,8 @@ class TestStringMethods(unittest.TestCase):
         self.log.info(str(file_path).encode('utf-8'))
 
         with TdmsFile.read_metadata(file_path) as tdms_file:
-            self.log.info(f"{tdms_file.properties["name"]}")
+            file_name_val = tdms_file.properties["name"]
+            self.log.info(f"{file_name_val}")
             for name, value in tdms_file.properties.items():
                 self.log.info("f: {0}: {1}".format(name, value))
 
