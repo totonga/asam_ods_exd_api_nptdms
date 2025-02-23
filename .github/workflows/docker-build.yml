@@ -13,6 +13,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Extract version number
+        run: |
+          VERSION=$(grep -oP "(?<=__version__ = ')[^']+" __init__.py)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -29,4 +34,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/asam-ods-exd-api-nptdms:latest
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/asam-ods-exd-api-nptdms:latest
+            ghcr.io/${{ github.repository_owner }}/asam-ods-exd-api-nptdms:${{ env.VERSION }}
