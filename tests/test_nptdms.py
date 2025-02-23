@@ -1,5 +1,4 @@
-import sys, os
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/..")
+import os
 
 import logging
 import pathlib
@@ -7,11 +6,13 @@ import unittest
 
 from nptdms import TdmsFile
 
+
 class TestStringMethods(unittest.TestCase):
     log = logging.getLogger(__name__)
 
     def __get_example_file_path(self, file_name):
-        example_file_path = pathlib.Path.joinpath(pathlib.Path(__file__).parent.resolve(), '..', 'data', file_name)
+        example_file_path = pathlib.Path.joinpath(pathlib.Path(
+            __file__).parent.resolve(), '..', 'data', file_name)
         return pathlib.Path(example_file_path).resolve()
 
     def test_open(self):
@@ -64,7 +65,3 @@ class TestStringMethods(unittest.TestCase):
                     for name, value in channel.properties.items():
                         self.log.info("  c: {0}: {1}".format(name, value))
                         self.log.info(f"   l: {len(channel)}")
-
-
-if __name__ == '__main__':
-    unittest.main()
