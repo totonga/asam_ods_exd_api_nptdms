@@ -21,10 +21,13 @@ class TestDockerContainer(unittest.TestCase):
         example_file_path = pathlib.Path.joinpath(pathlib.Path(
             __file__).parent.resolve(), '..', 'data')
         data_folder = pathlib.Path(example_file_path).absolute().resolve()
-        cls.container_id = subprocess.check_output(
+        cp = subprocess.run(
             ["docker", "run", "-d", "--rm", "--name", "test_container",
-             "-p", "50051:50051", "-v", f"{data_folder}:/data", "asam-ods-exd-api-nptdms"]
-        ).decode().strip()
+             "-p", "50051:50051", "-v", f"{data_folder}:/data", "asam-ods-exd-api-nptdms"],
+            stdout=subprocess.PIPE,
+            check=True
+        )
+        cls.container_id = cp.stdout.decode().strip()
         cls.__wait_for_port_ready()
 
     @classmethod
