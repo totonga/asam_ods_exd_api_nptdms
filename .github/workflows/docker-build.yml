@@ -15,7 +15,7 @@ jobs:
 
       - name: Extract version number
         run: |
-          VERSION=$(grep -oP "(?<=__version__ = ')[^']+" __init__.py)
+          VERSION=$(grep -oP '(?<=__version__ = ")[^"]+' __init__.py)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
