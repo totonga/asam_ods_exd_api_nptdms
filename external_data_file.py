@@ -1,6 +1,7 @@
 """Interface for handling file access."""
 
 import re
+from typing import override
 
 import numpy as np
 
@@ -9,24 +10,29 @@ from nptdms import TdmsFile
 import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
 import ods_pb2 as ods  # pylint: disable=import-error
 
+from external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
 
-class ExternalDataFile:
+
+class ExternalDataFile(ExternalDataFileInterface):
     """Class for handling for NI tdms files."""
 
+    @override
     def __init__(self, file_path: str, parameters: str = ""):
         self.file_path = file_path
         self.parameters = parameters
         self.tdms_file = TdmsFile.open(file_path)
 
+    @override
     def close(self):
         """Close the external data file."""
         self.tdms_file.close()
 
-    def fill_structure(self, rv: exd_api.StructureResult) -> None:
+    @override
+    def fill_structure(self, structure: exd_api.StructureResult) -> None:
         """Fill the structure of the external data file."""
         file = self.tdms_file
 
-        self.__add_attributes(file.properties, rv.attributes)
+        self.__add_attributes(file.properties, structure.attributes)
 
         for group_index, group in enumerate(file.groups(), start=0):
 
@@ -65,9 +71,10 @@ class ExternalDataFile:
 
                     new_group.channels.append(new_channel)
 
-                rv.groups.append(new_group)
+                structure.groups.append(new_group)
                 group_sub_index += 1
 
+    @override
     def get_values(self, request: exd_api.ValuesRequest) -> exd_api.ValuesResult:
         """Get values from the external data file."""
 

@@ -1,4 +1,5 @@
 """EXD API implementation"""
+from dataclasses import dataclass
 import logging
 import os
 from pathlib import Path
@@ -11,8 +12,16 @@ import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
 import ods_external_data_pb2_grpc  # pylint: disable=import-error
 
 from external_data_file import ExternalDataFile  # pylint: disable=import-error
+from external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
 
 # pylint: disable=invalid-name
+
+
+@dataclass
+class FileMapEntry:
+    """Entry in the file map."""
+    file: ExternalDataFileInterface
+    ref_count: int = 0
 
 
 class ExternalDataReader(ods_external_data_pb2_grpc.ExternalDataReader):
@@ -76,10 +85,10 @@ class ExternalDataReader(ods_external_data_pb2_grpc.ExternalDataReader):
                       f'Method not implemented! request. Names: {request.channel_names}')
 
     def __init__(self) -> None:
-        self.connect_count = 0
-        self.connection_map = {}
-        self.file_map = {}
-        self.lock = threading.Lock()
+        self.connect_count: int = 0
+        self.connection_map: dict[str, exd_api.Identifier] = {}
+        self.file_map: dict[str, FileMapEntry] = {}
+        self.lock: threading.Lock = threading.Lock()
 
     def __get_id(self, identifier: exd_api.Identifier) -> str:
         self.connect_count += 1
@@ -106,12 +115,12 @@ class ExternalDataReader(ods_external_data_pb2_grpc.ExternalDataReader):
                               connection_url, connection_id)
                 file_handle = ExternalDataFile(
                     connection_url, identifier.parameters)
-                self.file_map[connection_url] = {
-                    "file": file_handle, "ref_count": 0}
-            self.file_map[connection_url]["ref_count"] += 1
+                self.file_map[connection_url] = FileMapEntry(
+                    file=file_handle, ref_count=0)
+            self.file_map[connection_url].ref_count += 1
             return connection_id
 
-    def __get_file(self, handle: exd_api.Handle) -> tuple[ExternalDataFile, exd_api.Identifier]:
+    def __get_file(self, handle: exd_api.Handle) -> tuple[ExternalDataFileInterface, exd_api.Identifier]:
         identifier = self.connection_map.get(handle.uuid)
         if identifier is None:
             raise KeyError(f"Handle '{handle.uuid}' not found.")
@@ -120,7 +129,7 @@ class ExternalDataReader(ods_external_data_pb2_grpc.ExternalDataReader):
         if entry is None:
             raise KeyError(
                 f"Connection URL '{connection_url}' not found.")
-        return entry["file"], identifier
+        return entry.file, identifier
 
     def __close_file(self, handle: exd_api.Handle) -> None:
         with self.lock:
@@ -133,9 +142,8 @@ class ExternalDataReader(ods_external_data_pb2_grpc.ExternalDataReader):
             if entry is None:
                 raise KeyError(
                     f"Connection URL '{connection_url}' not found for close.")
-            if entry["ref_count"] > 1:
-                entry["ref_count"] -= 1
+            if entry.ref_count > 1:
+                entry.ref_count -= 1
             else:
-                entry["file"].close()
-                del entry["file"]
+                entry.file.close()
                 self.file_map.pop(connection_url)

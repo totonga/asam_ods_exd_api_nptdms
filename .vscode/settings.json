@@ -16,7 +16,10 @@
         "source.organizeImports": "always",
     },
     "cSpell.words": [
-        "dtypes"
+        "dtypes",
+        "issubdtype",
+        "nptdms",
+        "Tdms"
     ],
     "python.testing.unittestArgs": [
         "-v",
