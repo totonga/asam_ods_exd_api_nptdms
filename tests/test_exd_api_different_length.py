@@ -15,9 +15,16 @@ from google.protobuf.json_format import MessageToJson
 
 from nptdms import TdmsWriter, ChannelObject
 
+from exd_api_server import FileHandlerRegistry
+from external_data_file import ExternalDataFile
+
 
 class TestDifferentLength(unittest.TestCase):
     log = logging.getLogger(__name__)
+
+    def setUp(self):
+        """Register ExternalDataFile handler before each test."""
+        FileHandlerRegistry.register('tdms', ExternalDataFile)
 
     def _get_example_file_path(self, file_name):
         example_file_path = pathlib.Path.joinpath(pathlib.Path(

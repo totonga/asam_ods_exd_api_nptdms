@@ -207,3 +207,10 @@ class ExternalDataFile(ExternalDataFileInterface):
         elif np.issubdtype(data_type, object):
             return ods.DataTypeEnum.DT_STRING
         raise NotImplementedError(f'Unknown type {data_type}!')
+
+
+if __name__ == '__main__':
+
+    from exd_api_server import serve_plugin  # pylint: disable=import-error
+
+    serve_plugin('TDMS', ExternalDataFile)

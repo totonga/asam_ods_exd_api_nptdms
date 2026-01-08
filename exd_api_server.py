@@ -5,12 +5,15 @@ import argparse
 from concurrent import futures
 import logging
 import multiprocessing
+from typing import Callable
 
 import grpc
 
 import ods_external_data_pb2_grpc  # pylint: disable=import-error
 
 from external_data_reader import ExternalDataReader  # pylint: disable=import-error
+from external_data_file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
+from external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
 
 
 def _get_server_config():
@@ -64,5 +67,12 @@ def serve():
     server.wait_for_termination()
 
 
-if __name__ == '__main__':
+def serve_plugin(file_type: str, factory: Callable[[str, str], ExternalDataFileInterface]):
+    """Starts the gRPC server for a specific external data file type plugin.
+
+    Args:
+        file_type: File type identifier (e.g., 'tdms')
+        factory: Callable that creates ExternalDataFileInterface instances
+    """
+    FileHandlerRegistry.register(file_type, factory)
     serve()

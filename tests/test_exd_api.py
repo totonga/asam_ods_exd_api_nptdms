@@ -6,9 +6,16 @@ import unittest
 import pathlib
 import logging
 
+from exd_api_server import FileHandlerRegistry
+from external_data_file import ExternalDataFile
+
 
 class TestExdApi(unittest.TestCase):
     log = logging.getLogger(__name__)
+
+    def setUp(self):
+        """Register ExternalDataFile handler before each test."""
+        FileHandlerRegistry.register('tdms', ExternalDataFile)
 
     def _get_example_file_path(self, file_name):
         example_file_path = pathlib.Path.joinpath(pathlib.Path(

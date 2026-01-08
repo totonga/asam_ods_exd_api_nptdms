@@ -11,8 +11,8 @@ import grpc
 import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
 import ods_external_data_pb2_grpc  # pylint: disable=import-error
 
-from external_data_file import ExternalDataFile  # pylint: disable=import-error
 from external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
+from external_data_file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
 
 # pylint: disable=invalid-name
 
@@ -113,7 +113,7 @@ class ExternalDataReader(ods_external_data_pb2_grpc.ExternalDataReader):
             if connection_url not in self.file_map:
                 self.log.info("Opening external data file '%s' as connection id '%s'.",
                               connection_url, connection_id)
-                file_handle = ExternalDataFile(
+                file_handle = FileHandlerRegistry.create_from_path(
                     connection_url, identifier.parameters)
                 self.file_map[connection_url] = FileMapEntry(
                     file=file_handle, ref_count=0)
