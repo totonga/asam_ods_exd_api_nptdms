@@ -8,13 +8,11 @@ from pathlib import Path
 
 import numpy as np
 
-import ods_external_data_pb2 as oed
-
 from google.protobuf.json_format import MessageToJson
 
 from nptdms import TdmsWriter, ChannelObject
 
-from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, exd_api
 from external_data_file import ExternalDataFile
 
 
@@ -73,12 +71,12 @@ class TestDifferentLength(unittest.TestCase):
                     "group_4", "channel_4", np.array([4.1, 4.2, 4.3, 4.4], np.float64))])
 
             service = ExternalDataReader()
-            handle = service.Open(oed.Identifier(
+            handle = service.Open(exd_api.Identifier(
                 url=Path(file_path).resolve().as_uri(),
                 parameters=""), None)
             try:
                 structure = service.GetStructure(
-                    oed.StructureRequest(handle=handle), None)
+                    exd_api.StructureRequest(handle=handle), None)
                 self.log.info(MessageToJson(structure))
 
                 self.assertEqual(structure.name, 'all_datatypes.tdms')
@@ -90,14 +88,14 @@ class TestDifferentLength(unittest.TestCase):
                 self.assertEqual(len(structure.groups[1].channels), 2)
 
                 meta_group = structure.groups[0]
-                values = service.GetValues(oed.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
+                values = service.GetValues(exd_api.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
                     meta_group.channels[0].id, meta_group.channels[1].id]), None)
                 self.assertSequenceEqual(
                     values.channels[0].values.double_array.values, [1.1, 1.2])
                 self.assertSequenceEqual(
                     values.channels[1].values.double_array.values, [2.1, 2.2])
                 meta_group = structure.groups[1]
-                values = service.GetValues(oed.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
+                values = service.GetValues(exd_api.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
                     meta_group.channels[0].id, meta_group.channels[1].id]), None)
                 self.assertSequenceEqual(
                     values.channels[0].values.double_array.values, [3.1, 3.2, 3.3, 3.4])
@@ -105,14 +103,14 @@ class TestDifferentLength(unittest.TestCase):
                     values.channels[1].values.double_array.values, [4.1, 4.2, 4.3, 4.4])
 
                 meta_group = structure.groups[2]
-                values = service.GetValues(oed.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
+                values = service.GetValues(exd_api.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
                     meta_group.channels[0].id, meta_group.channels[1].id]), None)
                 self.assertSequenceEqual(
                     values.channels[0].values.double_array.values, [1.1, 1.2, 1.3, 1.4])
                 self.assertSequenceEqual(
                     values.channels[1].values.double_array.values, [2.1, 2.2, 2.3, 2.4])
                 meta_group = structure.groups[3]
-                values = service.GetValues(oed.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
+                values = service.GetValues(exd_api.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
                     meta_group.channels[0].id, meta_group.channels[1].id]), None)
                 self.assertSequenceEqual(
                     values.channels[0].values.double_array.values, [3.1, 3.2])
@@ -120,14 +118,14 @@ class TestDifferentLength(unittest.TestCase):
                     values.channels[1].values.double_array.values, [4.1, 4.2])
 
                 meta_group = structure.groups[4]
-                values = service.GetValues(oed.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
+                values = service.GetValues(exd_api.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
                     meta_group.channels[0].id, meta_group.channels[1].id]), None)
                 self.assertSequenceEqual(
                     values.channels[0].values.double_array.values, [1.1, 1.2, 1.3, 1.4])
                 self.assertSequenceEqual(
                     values.channels[1].values.double_array.values, [3.1, 3.2, 3.3, 3.4])
                 meta_group = structure.groups[5]
-                values = service.GetValues(oed.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
+                values = service.GetValues(exd_api.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
                     meta_group.channels[0].id, meta_group.channels[1].id]), None)
                 self.assertSequenceEqual(
                     values.channels[0].values.double_array.values, [2.1, 2.2])
@@ -135,7 +133,7 @@ class TestDifferentLength(unittest.TestCase):
                     values.channels[1].values.double_array.values, [4.1, 4.2])
 
                 meta_group = structure.groups[6]
-                values = service.GetValues(oed.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
+                values = service.GetValues(exd_api.ValuesRequest(handle=handle, group_id=meta_group.id, start=0, limit=4, channel_ids=[
                     meta_group.channels[0].id, meta_group.channels[1].id, meta_group.channels[2].id, meta_group.channels[3].id]), None)
                 self.assertSequenceEqual(
                     values.channels[0].values.double_array.values, [1.1, 1.2, 1.3, 1.4])

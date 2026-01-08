@@ -2,13 +2,10 @@ import logging
 import pathlib
 import unittest
 
-import ods_pb2 as ods
-import ods_external_data_pb2 as oed
-
 from google.protobuf.json_format import MessageToJson
 
 from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry
-from external_data_file import ExternalDataFile
+from external_data_file import ExternalDataFile, ods, exd_api
 
 
 class TestExdApiEtc(unittest.TestCase):
@@ -25,12 +22,12 @@ class TestExdApiEtc(unittest.TestCase):
 
     def test_file_example(self):
         service = ExternalDataReader()
-        handle = service.Open(oed.Identifier(
+        handle = service.Open(exd_api.Identifier(
             url=self._get_example_file_path('example.tdms'),
             parameters=""), None)
         try:
             structure = service.GetStructure(
-                oed.StructureRequest(handle=handle), None)
+                exd_api.StructureRequest(handle=handle), None)
             self.log.info(MessageToJson(structure))
 
             self.assertEqual(structure.name, 'example.tdms')
@@ -48,11 +45,12 @@ class TestExdApiEtc(unittest.TestCase):
             self.assertEqual(
                 structure.groups[1].channels[1].data_type, ods.DataTypeEnum.DT_DOUBLE)
 
-            values = service.GetValues(oed.ValuesRequest(handle=handle,
-                                                         group_id=0,
-                                                         channel_ids=[0, 1],
-                                                         start=0,
-                                                         limit=4), None)
+            values = service.GetValues(exd_api.ValuesRequest(handle=handle,
+                                                             group_id=0,
+                                                             channel_ids=[
+                                                                 0, 1],
+                                                             start=0,
+                                                             limit=4), None)
             self.assertEqual(len(values.channels), 2)
             self.log.info(MessageToJson(values))
             self.assertEqual(
@@ -64,11 +62,12 @@ class TestExdApiEtc(unittest.TestCase):
             self.assertSequenceEqual(values.channels[1].values.float_array.values, [
                                      150.0, 160.0, 170.0, 180.0])
 
-            values = service.GetValues(oed.ValuesRequest(handle=handle,
-                                                         group_id=1,
-                                                         channel_ids=[0, 1],
-                                                         start=0,
-                                                         limit=4), None)
+            values = service.GetValues(exd_api.ValuesRequest(handle=handle,
+                                                             group_id=1,
+                                                             channel_ids=[
+                                                                 0, 1],
+                                                             start=0,
+                                                             limit=4), None)
             self.assertEqual(len(values.channels), 2)
             self.log.info(MessageToJson(values))
             self.assertEqual(
@@ -85,12 +84,12 @@ class TestExdApiEtc(unittest.TestCase):
 
     def test_file_big_endian(self):
         service = ExternalDataReader()
-        handle = service.Open(oed.Identifier(
+        handle = service.Open(exd_api.Identifier(
             url=self._get_example_file_path('big_endian.tdms'),
             parameters=""), None)
         try:
             structure = service.GetStructure(
-                oed.StructureRequest(handle=handle), None)
+                exd_api.StructureRequest(handle=handle), None)
             self.log.info(MessageToJson(structure))
 
             self.assertEqual(len(structure.groups), 1)
@@ -101,11 +100,12 @@ class TestExdApiEtc(unittest.TestCase):
             self.assertEqual(
                 structure.groups[0].channels[1].data_type, ods.DataTypeEnum.DT_DOUBLE)
 
-            values = service.GetValues(oed.ValuesRequest(handle=handle,
-                                                         group_id=0,
-                                                         channel_ids=[0, 1],
-                                                         start=0,
-                                                         limit=4), None)
+            values = service.GetValues(exd_api.ValuesRequest(handle=handle,
+                                                             group_id=0,
+                                                             channel_ids=[
+                                                                 0, 1],
+                                                             start=0,
+                                                             limit=4), None)
             self.assertEqual(len(values.channels), 2)
             self.log.info(MessageToJson(values))
             self.assertEqual(
@@ -122,12 +122,12 @@ class TestExdApiEtc(unittest.TestCase):
 
     def test_file_Digital_Input(self):
         service = ExternalDataReader()
-        handle = service.Open(oed.Identifier(
+        handle = service.Open(exd_api.Identifier(
             url=self._get_example_file_path('Digital_Input.tdms'),
             parameters=""), None)
         try:
             structure = service.GetStructure(
-                oed.StructureRequest(handle=handle), None)
+                exd_api.StructureRequest(handle=handle), None)
             self.log.info(MessageToJson(structure))
 
             self.assertEqual(len(structure.groups), 3)
@@ -144,11 +144,11 @@ class TestExdApiEtc(unittest.TestCase):
             self.assertEqual(
                 structure.groups[2].channels[0].data_type, ods.DataTypeEnum.DT_BYTE)
 
-            values = service.GetValues(oed.ValuesRequest(handle=handle,
-                                                         group_id=0,
-                                                         channel_ids=[0],
-                                                         start=0,
-                                                         limit=4), None)
+            values = service.GetValues(exd_api.ValuesRequest(handle=handle,
+                                                             group_id=0,
+                                                             channel_ids=[0],
+                                                             start=0,
+                                                             limit=4), None)
             self.assertEqual(len(values.channels), 1)
             self.log.info(MessageToJson(values))
             self.assertEqual(
@@ -161,12 +161,12 @@ class TestExdApiEtc(unittest.TestCase):
 
     def test_file_raw_timestamps(self):
         service = ExternalDataReader()
-        handle = service.Open(oed.Identifier(
+        handle = service.Open(exd_api.Identifier(
             url=self._get_example_file_path('raw_timestamps.tdms'),
             parameters=""), None)
         try:
             structure = service.GetStructure(
-                oed.StructureRequest(handle=handle), None)
+                exd_api.StructureRequest(handle=handle), None)
             self.log.info(MessageToJson(structure))
 
             self.assertEqual(len(structure.groups), 1)
@@ -175,11 +175,11 @@ class TestExdApiEtc(unittest.TestCase):
             self.assertEqual(
                 structure.groups[0].channels[0].data_type, ods.DataTypeEnum.DT_DOUBLE)
 
-            values = service.GetValues(oed.ValuesRequest(handle=handle,
-                                                         group_id=0,
-                                                         channel_ids=[0],
-                                                         start=0,
-                                                         limit=4), None)
+            values = service.GetValues(exd_api.ValuesRequest(handle=handle,
+                                                             group_id=0,
+                                                             channel_ids=[0],
+                                                             start=0,
+                                                             limit=4), None)
             self.assertEqual(len(values.channels), 1)
             self.log.info(MessageToJson(values))
             self.assertEqual(

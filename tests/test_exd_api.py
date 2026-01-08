@@ -1,12 +1,10 @@
 from google.protobuf.json_format import MessageToJson
-import ods_external_data_pb2 as oed
-import ods_pb2 as ods
 import unittest
 import pathlib
 import logging
 
 from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry
-from external_data_file import ExternalDataFile
+from external_data_file import ExternalDataFile, ods, exd_api
 
 
 class TestExdApi(unittest.TestCase):
@@ -23,7 +21,7 @@ class TestExdApi(unittest.TestCase):
 
     def test_open(self):
         service = ExternalDataReader()
-        handle = service.Open(oed.Identifier(
+        handle = service.Open(exd_api.Identifier(
             url=self._get_example_file_path('raw1.tdms'),
             parameters=""), None)
         try:
@@ -33,12 +31,12 @@ class TestExdApi(unittest.TestCase):
 
     def test_structure(self):
         service = ExternalDataReader()
-        handle = service.Open(oed.Identifier(
+        handle = service.Open(exd_api.Identifier(
             url=self._get_example_file_path('raw1.tdms'),
             parameters=""), None)
         try:
             structure = service.GetStructure(
-                oed.StructureRequest(handle=handle), None)
+                exd_api.StructureRequest(handle=handle), None)
             self.log.info(MessageToJson(structure))
 
             self.assertEqual(structure.name, 'raw1.tdms')
@@ -57,15 +55,16 @@ class TestExdApi(unittest.TestCase):
 
     def test_get_values(self):
         service = ExternalDataReader()
-        handle = service.Open(oed.Identifier(
+        handle = service.Open(exd_api.Identifier(
             url=self._get_example_file_path('raw1.tdms'),
             parameters=""), None)
         try:
-            values = service.GetValues(oed.ValuesRequest(handle=handle,
-                                                         group_id=0,
-                                                         channel_ids=[0, 1],
-                                                         start=0,
-                                                         limit=4), None)
+            values = service.GetValues(exd_api.ValuesRequest(handle=handle,
+                                                             group_id=0,
+                                                             channel_ids=[
+                                                                 0, 1],
+                                                             start=0,
+                                                             limit=4), None)
             self.assertEqual(values.id, 0)
             self.assertEqual(len(values.channels), 2)
             self.assertEqual(values.channels[0].id, 0)

@@ -7,10 +7,7 @@ import numpy as np
 
 from nptdms import TdmsFile
 
-import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
-import ods_pb2 as ods  # pylint: disable=import-error
-
-from ods_exd_api_box import ExternalDataFileInterface  # pylint: disable=import-error
+from ods_exd_api_box import ExternalDataFileInterface, exd_api, ods  # pylint: disable=import-error
 
 
 class ExternalDataFile(ExternalDataFileInterface):

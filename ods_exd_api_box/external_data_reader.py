@@ -1,18 +1,18 @@
 """EXD API implementation"""
+import os
 from dataclasses import dataclass
 import logging
-import os
 from pathlib import Path
 import threading
 from urllib.parse import urlparse, unquote
 from urllib.request import url2pathname
 
 import grpc
-import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
-import ods_external_data_pb2_grpc  # pylint: disable=import-error
 
+from . import exd_api, exd_grpc  # pylint: disable=import-error
 from .file_interface import ExternalDataFileInterface  # pylint: disable=import-error
 from .file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
+
 
 # pylint: disable=invalid-name
 
@@ -24,7 +24,7 @@ class FileMapEntry:
     ref_count: int = 0
 
 
-class ExternalDataReader(ods_external_data_pb2_grpc.ExternalDataReader):
+class ExternalDataReader(exd_grpc.ExternalDataReader):
     """ASAM ODS EXD API implementation."""
 
     log = logging.getLogger(__name__)

@@ -9,14 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-import ods_pb2 as ods
-import ods_external_data_pb2 as oed
-
 from google.protobuf.json_format import MessageToJson
 
 from nptdms import TdmsWriter, ChannelObject
 
-from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, ods, exd_api
 from external_data_file import ExternalDataFile
 
 
@@ -72,12 +69,12 @@ class TestDataTypes(unittest.TestCase):
                     [ChannelObject("group_string", "string_data", ["abc", "def"])])
 
             service = ExternalDataReader()
-            handle = service.Open(oed.Identifier(
+            handle = service.Open(exd_api.Identifier(
                 url=Path(file_path).resolve().as_uri(),
                 parameters=""), None)
             try:
                 structure = service.GetStructure(
-                    oed.StructureRequest(handle=handle), None)
+                    exd_api.StructureRequest(handle=handle), None)
                 self.log.info(MessageToJson(structure))
 
                 self.assertEqual(structure.name, 'all_datatypes.tdms')
@@ -126,7 +123,7 @@ class TestDataTypes(unittest.TestCase):
                 self.assertEqual(
                     structure.groups[4].channels[0].data_type, ods.DataTypeEnum.DT_STRING)
 
-                values = service.GetValues(oed.ValuesRequest(
+                values = service.GetValues(exd_api.ValuesRequest(
                     handle=handle, group_id=0, start=0, limit=2, channel_ids=[0, 1]), None)
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_COMPLEX)
@@ -137,7 +134,7 @@ class TestDataTypes(unittest.TestCase):
                 self.assertSequenceEqual(
                     values.channels[1].values.double_array.values, [5.0, 6.0, 7.0, 8.0])
 
-                values = service.GetValues(oed.ValuesRequest(
+                values = service.GetValues(exd_api.ValuesRequest(
                     handle=handle, group_id=1, start=0, limit=2, channel_ids=[0, 1, 2, 3, 4, 5, 6, 7]), None)
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_SHORT)
@@ -172,14 +169,14 @@ class TestDataTypes(unittest.TestCase):
                 self.assertSequenceEqual(
                     values.channels[7].values.double_array.values, [2.0, 4.0])
 
-                values = service.GetValues(oed.ValuesRequest(
+                values = service.GetValues(exd_api.ValuesRequest(
                     handle=handle, group_id=2, start=0, limit=2, channel_ids=[0]), None)
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_DATE)
                 self.assertSequenceEqual(values.channels[0].values.string_array.values, [
                                          '20170709123500000000', '20170709123600000000'])
 
-                values = service.GetValues(oed.ValuesRequest(
+                values = service.GetValues(exd_api.ValuesRequest(
                     handle=handle, group_id=3, start=0, limit=2, channel_ids=[0, 1]), None)
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_FLOAT)
@@ -190,7 +187,7 @@ class TestDataTypes(unittest.TestCase):
                 self.assertSequenceEqual(
                     values.channels[1].values.double_array.values, [2.1, 2.2])
 
-                values = service.GetValues(oed.ValuesRequest(
+                values = service.GetValues(exd_api.ValuesRequest(
                     handle=handle, group_id=4, start=0, limit=2, channel_ids=[0]), None)
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_STRING)

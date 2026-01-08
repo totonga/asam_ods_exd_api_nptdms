@@ -9,8 +9,7 @@ from typing import Callable
 
 import grpc
 
-import ods_external_data_pb2_grpc  # pylint: disable=import-error
-
+from . import exd_grpc  # pylint: disable=import-error
 from .external_data_reader import ExternalDataReader  # pylint: disable=import-error
 from .file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
 from .file_interface import ExternalDataFileInterface  # pylint: disable=import-error
@@ -58,7 +57,7 @@ def serve():
             ("grpc.max_receive_message_length",
              max_receive_message_length * 1024 * 1024),
         ])
-    ods_external_data_pb2_grpc.add_ExternalDataReaderServicer_to_server(
+    exd_grpc.add_ExternalDataReaderServicer_to_server(
         ExternalDataReader(), server)
     server.add_insecure_port(f"[::]:{port}")
     server.start()

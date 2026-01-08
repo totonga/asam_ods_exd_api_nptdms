@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
+import proto_stubs.ods_external_data_pb2 as exd_api  # pylint: disable=import-error
 
 
 class ExternalDataFileInterface(ABC):
