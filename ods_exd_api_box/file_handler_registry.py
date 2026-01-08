@@ -2,7 +2,7 @@
 
 from typing import Callable
 
-from .external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
+from .file_interface import ExternalDataFileInterface  # pylint: disable=import-error
 
 
 class FileHandlerRegistry:
