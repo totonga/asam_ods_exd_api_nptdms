@@ -19,7 +19,8 @@ ADD https://raw.githubusercontent.com/asam-ev/ASAM-ODS-Interfaces/main/ods_exter
 RUN python3 -m grpc_tools.protoc -I. --python_out=. ods.proto
 RUN python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ods_external_data.proto
 # Copy plugin implementation
-COPY __init__.py exd_api_server.py external_data_reader.py external_data_file.py external_data_file_interface.py external_data_file_handler_registry.py ./
+COPY __init__.py external_data_file.py ./
+COPY ods_exd_api_box/ ./ods_exd_api_box/
 USER appuser
 # Start server
 CMD [ "python3", "external_data_file.py"]

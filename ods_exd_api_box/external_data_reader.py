@@ -11,8 +11,8 @@ import grpc
 import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
 import ods_external_data_pb2_grpc  # pylint: disable=import-error
 
-from external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
-from external_data_file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
+from .external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
+from .external_data_file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
 
 # pylint: disable=invalid-name
 

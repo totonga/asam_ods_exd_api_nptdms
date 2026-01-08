@@ -11,9 +11,9 @@ import grpc
 
 import ods_external_data_pb2_grpc  # pylint: disable=import-error
 
-from external_data_reader import ExternalDataReader  # pylint: disable=import-error
-from external_data_file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
-from external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
+from .external_data_reader import ExternalDataReader  # pylint: disable=import-error
+from .external_data_file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
+from .external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
 
 
 def _get_server_config():

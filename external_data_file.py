@@ -10,7 +10,7 @@ from nptdms import TdmsFile
 import ods_external_data_pb2 as exd_api  # pylint: disable=import-error
 import ods_pb2 as ods  # pylint: disable=import-error
 
-from external_data_file_interface import ExternalDataFileInterface  # pylint: disable=import-error
+from ods_exd_api_box import ExternalDataFileInterface  # pylint: disable=import-error
 
 
 class ExternalDataFile(ExternalDataFileInterface):
@@ -211,6 +211,6 @@ class ExternalDataFile(ExternalDataFileInterface):
 
 if __name__ == '__main__':
 
-    from exd_api_server import serve_plugin  # pylint: disable=import-error
+    from ods_exd_api_box import serve_plugin  # pylint: disable=import-error
 
     serve_plugin('TDMS', ExternalDataFile)

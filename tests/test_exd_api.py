@@ -1,12 +1,11 @@
 from google.protobuf.json_format import MessageToJson
-from external_data_reader import ExternalDataReader
 import ods_external_data_pb2 as oed
 import ods_pb2 as ods
 import unittest
 import pathlib
 import logging
 
-from exd_api_server import FileHandlerRegistry
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry
 from external_data_file import ExternalDataFile
 
 

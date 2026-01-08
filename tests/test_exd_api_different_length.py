@@ -10,12 +10,11 @@ import numpy as np
 
 import ods_external_data_pb2 as oed
 
-from external_data_reader import ExternalDataReader
 from google.protobuf.json_format import MessageToJson
 
 from nptdms import TdmsWriter, ChannelObject
 
-from exd_api_server import FileHandlerRegistry
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry
 from external_data_file import ExternalDataFile
 
 
