@@ -16,9 +16,10 @@ RUN pip3 install --upgrade pip && pip3 install -r requirements.txt
 ADD https://raw.githubusercontent.com/asam-ev/ASAM-ODS-Interfaces/main/ods.proto /app/
 ADD https://raw.githubusercontent.com/asam-ev/ASAM-ODS-Interfaces/main/ods_external_data.proto /app/
 # Use protoc to compile stubs in container
-RUN mkdir proto_stubs
-RUN python3 -m grpc_tools.protoc -I. --python_out=proto_stubs/. ods.proto
-RUN python3 -m grpc_tools.protoc -I. --python_out=proto_stubs/. --grpc_python_out=proto_stubs/. ods_external_data.proto
+RUN mkdir -p ods_exd_api_box/proto
+# overwrite existing pregenerated files to ensure compatibility with the used grpcio version
+RUN python3 -m grpc_tools.protoc -I. --python_out=ods_exd_api_box/proto/. ods.proto
+RUN python3 -m grpc_tools.protoc -I. --python_out=ods_exd_api_box/proto/. --grpc_python_out=ods_exd_api_box/proto/. ods_external_data.proto
 # Copy plugin implementation
 COPY __init__.py external_data_file.py ./
 COPY ods_exd_api_box/ ./ods_exd_api_box/
