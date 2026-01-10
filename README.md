@@ -13,8 +13,11 @@ Because the repository does not contain the ASAM ODS protobuf files the generate
 The files that match `*_pb2*` are generated suing the following command. To renew them you must put the
 proto files from the ODS standard into `proto_src` and rerun the command.
 
-```
-python -m grpc_tools.protoc --proto_path=proto_src --pyi_out=. --python_out=. --grpc_python_out=. ods.proto ods_external_data.proto
+```bash
+curl -o /workspaces/asam_ods_exd_api_nptdms/ods.proto https://raw.githubusercontent.com/asam-ev/ASAM-ODS-Interfaces/main/ods.proto
+curl -o /workspaces/asam_ods_exd_api_nptdms/ods_external_data.proto https://raw.githubusercontent.com/asam-ev/ASAM-ODS-Interfaces/main/ods_external_data.proto
+mkdir -p ods_exd_api_box/proto
+python3 -m grpc_tools.protoc -I. --python_out=ods_exd_api_box/proto/. --pyi_out=ods_exd_api_box/proto/. --grpc_python_out=ods_exd_api_box/proto/. ods.proto ods_external_data.proto
 ```
 
 ## Content
