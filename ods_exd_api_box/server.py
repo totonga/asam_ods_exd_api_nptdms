@@ -1,6 +1,5 @@
 """gRPC server for ASAM ODS EXD-API."""
-# Prepare python to use GRPC interface:
-# python -m grpc_tools.protoc --proto_path=proto_src --pyi_out=. --python_out=. --grpc_python_out=. ods.proto ods_external_data.proto
+from __future__ import annotations
 
 import argparse
 from concurrent import futures
