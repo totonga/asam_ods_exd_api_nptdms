@@ -7,10 +7,10 @@ __version__ = "0.1.0"
 
 from .proto import ods, exd_api, exd_grpc
 
+from .file_interface import ExdFileInterface
 from .file_handler_registry import FileHandlerRegistry
 from .external_data_reader import ExternalDataReader
 from .server import serve_plugin
-from .file_interface import ExternalDataFileInterface
 
 __all__ = [
     'ods',
@@ -19,6 +19,6 @@ __all__ = [
     'FileHandlerRegistry',
     'ExternalDataReader',
     'serve_plugin',
-    'ExternalDataFileInterface',
+    'ExdFileInterface',
     '__version__',
 ]

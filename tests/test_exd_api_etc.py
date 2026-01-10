@@ -4,8 +4,8 @@ import unittest
 
 from google.protobuf.json_format import MessageToJson
 
-from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry
-from external_data_file import ExternalDataFile, ods, exd_api
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, ods, exd_api
+from external_data_file import ExternalDataFile
 
 
 class TestExdApiEtc(unittest.TestCase):

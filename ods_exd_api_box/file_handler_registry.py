@@ -6,7 +6,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import Callable
 
-from .file_interface import ExternalDataFileInterface  # pylint: disable=import-error
+from . import ExdFileInterface
 
 
 @dataclass
@@ -15,7 +15,7 @@ class FileType:
 
     name: str
     file_patterns: list[str]
-    factory: Callable[[str, str], ExternalDataFileInterface]
+    factory: Callable[[str, str], ExdFileInterface]
 
 
 class FileHandlerRegistry:
@@ -30,7 +30,7 @@ class FileHandlerRegistry:
     @classmethod
     def register(cls,
                  file_type_name: str,
-                 factory: Callable[[str, str], ExternalDataFileInterface],
+                 factory: Callable[[str, str], ExdFileInterface],
                  file_patterns: list[str] = None
                  ) -> None:
         """Register a file handler factory for a specific file type.
@@ -43,7 +43,7 @@ class FileHandlerRegistry:
             file_type_name, file_patterns if file_patterns is not None else [], factory)
 
     @classmethod
-    def create(cls, file_type_name: str, file_path: str, parameters: str) -> ExternalDataFileInterface:
+    def create(cls, file_type_name: str, file_path: str, parameters: str) -> ExdFileInterface:
         """Create an instance of the registered handler for the given file type.
 
         Args:
@@ -98,7 +98,7 @@ class FileHandlerRegistry:
             f"No handler registered for file pattern matching '{filename}'")
 
     @classmethod
-    def create_from_path(cls, file_path: str, parameters: str) -> ExternalDataFileInterface:
+    def create_from_path(cls, file_path: str, parameters: str) -> ExdFileInterface:
         """Create an instance by automatically detecting file type from path.
 
         Args:

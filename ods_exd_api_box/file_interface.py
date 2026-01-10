@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from .proto import exd_api
+from . import exd_api
 
 
-class ExternalDataFileInterface(ABC):
+class ExdFileInterface(ABC):
     """Abstract interface for external data file handling."""
 
     @abstractmethod

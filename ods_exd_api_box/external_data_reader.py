@@ -11,9 +11,7 @@ from urllib.request import url2pathname
 
 import grpc
 
-from . import exd_api, exd_grpc  # pylint: disable=import-error
-from .file_interface import ExternalDataFileInterface  # pylint: disable=import-error
-from .file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
+from . import exd_api, exd_grpc, ExdFileInterface, FileHandlerRegistry
 
 
 # pylint: disable=invalid-name
@@ -22,7 +20,7 @@ from .file_handler_registry import FileHandlerRegistry  # pylint: disable=import
 @dataclass
 class FileMapEntry:
     """Entry in the file map."""
-    file: ExternalDataFileInterface
+    file: ExdFileInterface
     ref_count: int = 0
 
 
@@ -100,7 +98,7 @@ class ExternalDataReader(exd_grpc.ExternalDataReader):
 
     def __uri_to_path(self, uri: str) -> str:
         parsed = urlparse(uri)
-        host = "{0}{0}{mnt}{0}".format(os.path.sep, mnt=parsed.netloc)
+        host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"
         return os.path.normpath(
             os.path.join(host, url2pathname(unquote(parsed.path)))
         )
@@ -122,7 +120,7 @@ class ExternalDataReader(exd_grpc.ExternalDataReader):
             self.file_map[connection_url].ref_count += 1
             return connection_id
 
-    def __get_file(self, handle: exd_api.Handle) -> tuple[ExternalDataFileInterface, exd_api.Identifier]:
+    def __get_file(self, handle: exd_api.Handle) -> tuple[ExdFileInterface, exd_api.Identifier]:
         identifier = self.connection_map.get(handle.uuid)
         if identifier is None:
             raise KeyError(f"Handle '{handle.uuid}' not found.")

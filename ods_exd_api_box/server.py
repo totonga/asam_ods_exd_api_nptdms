@@ -9,10 +9,7 @@ from typing import Callable
 
 import grpc
 
-from . import exd_grpc  # pylint: disable=import-error
-from .external_data_reader import ExternalDataReader  # pylint: disable=import-error
-from .file_handler_registry import FileHandlerRegistry  # pylint: disable=import-error
-from .file_interface import ExternalDataFileInterface  # pylint: disable=import-error
+from . import exd_grpc, ExternalDataReader, FileHandlerRegistry, ExdFileInterface
 
 
 def _get_server_config():
@@ -68,7 +65,7 @@ def serve():
 
 def serve_plugin(
     file_type_name: str,
-    file_type_factory: Callable[[str, str], ExternalDataFileInterface],
+    file_type_factory: Callable[[str, str], ExdFileInterface],
     file_type_file_patterns: list[str] = None,
 ):
     """Starts the gRPC server for a specific external data file type plugin.
