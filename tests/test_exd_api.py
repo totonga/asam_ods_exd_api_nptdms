@@ -12,7 +12,8 @@ class TestExdApi(unittest.TestCase):
 
     def setUp(self):
         """Register ExternalDataFile handler before each test."""
-        FileHandlerRegistry.register('tdms', ExternalDataFile)
+        FileHandlerRegistry.register(
+            file_type_name='test', factory=ExternalDataFile)
 
     def _get_example_file_path(self, file_name):
         example_file_path = pathlib.Path.joinpath(pathlib.Path(

@@ -1,3 +1,4 @@
+"""gRPC server for ASAM ODS EXD-API."""
 # Prepare python to use GRPC interface:
 # python -m grpc_tools.protoc --proto_path=proto_src --pyi_out=. --python_out=. --grpc_python_out=. ods.proto ods_external_data.proto
 
@@ -66,12 +67,18 @@ def serve():
     server.wait_for_termination()
 
 
-def serve_plugin(file_type: str, factory: Callable[[str, str], ExternalDataFileInterface]):
+def serve_plugin(
+    file_type_name: str,
+    file_type_factory: Callable[[str, str], ExternalDataFileInterface],
+    file_type_file_patterns: list[str] = None,
+):
     """Starts the gRPC server for a specific external data file type plugin.
 
     Args:
-        file_type: File type identifier (e.g., 'tdms')
+        file_type_name: File type identifier (e.g., 'tdms')
+        file_patterns: List of file extension patterns (e.g., ['*.tdms'])
         factory: Callable that creates ExternalDataFileInterface instances
     """
-    FileHandlerRegistry.register(file_type, factory)
+    FileHandlerRegistry.register(
+        file_type_name=file_type_name, file_patterns=file_type_file_patterns, factory=file_type_factory)
     serve()

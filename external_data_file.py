@@ -210,4 +210,7 @@ if __name__ == '__main__':
 
     from ods_exd_api_box import serve_plugin  # pylint: disable=import-error
 
-    serve_plugin('TDMS', ExternalDataFile)
+    serve_plugin(
+        file_type_name="TDMS",
+        file_type_factory=ExternalDataFile,
+        file_type_file_patterns=["*.tdms"])
