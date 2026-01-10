@@ -1,25 +1,32 @@
-"""ASAM ODS protobuf stubs."""
-# fmt: off
-# isort: skip_file
+"""
+ASAM ODS protobuf stubs.
+Dynamically load the generated protobuf modules.
+This is necessary to integrate grpc stubs into a package
+because the generated code uses relative imports.
+"""
 
 import sys
 import os
+import importlib.util
 
-# Temporarily add proto directory to path so generated stubs can import each other
+
 _proto_dir = os.path.dirname(__file__)
-sys.path.insert(0, _proto_dir)
 
-try:
-    import ods_pb2 as ods
-    import ods_external_data_pb2 as exd_api
-    import ods_external_data_pb2_grpc as exd_grpc
 
-    # Register in sys.modules so the generated code can find these modules
-    # This is needed because ods_external_data.proto includes ods.proto
-    sys.modules['ods_pb2'] = ods
-    sys.modules['ods_external_data_pb2'] = exd_api
-    sys.modules['ods_external_data_pb2_grpc'] = exd_grpc
-finally:
-    sys.path.pop(0)
+def _load_proto_module(module_name):
+    spec = importlib.util.spec_from_file_location(
+        module_name,
+        os.path.join(_proto_dir, f"{module_name}.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    # Register in sys.modules before executing so generated code can find dependencies
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+ods = _load_proto_module("ods_pb2")
+exd_api = _load_proto_module("ods_external_data_pb2")
+exd_grpc = _load_proto_module("ods_external_data_pb2_grpc")
 
 __all__ = ['ods', 'exd_api', 'exd_grpc']
