@@ -9,13 +9,17 @@ from . import exd_api
 class ExdFileInterface(ABC):
     """Abstract interface for external data file handling."""
 
+    @classmethod
     @abstractmethod
-    def __init__(self, file_path: str, parameters: str = ""):
-        """Initialize the external data file handler.
+    def create(cls, file_path: str, parameters: str) -> ExdFileInterface:
+        """Factory method to create a file handler instance.
 
         Args:
             file_path: Path to the external data file
             parameters: Optional parameters for file handling
+
+        Returns:
+            An instance of the file handler
         """
 
     @abstractmethod

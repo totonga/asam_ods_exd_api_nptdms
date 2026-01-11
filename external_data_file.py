@@ -14,6 +14,12 @@ from ods_exd_api_box import ExdFileInterface, exd_api, ods  # pylint: disable=im
 class ExternalDataFile(ExdFileInterface):
     """Class for handling for NI tdms files."""
 
+    @classmethod
+    @override
+    def create(cls, file_path: str, parameters: str) -> ExdFileInterface:
+        """Factory method to create a file handler instance."""
+        return cls(file_path, parameters)
+
     @override
     def __init__(self, file_path: str, parameters: str = ""):
         self.file_path = file_path
@@ -213,5 +219,5 @@ if __name__ == '__main__':
 
     serve_plugin(
         file_type_name="TDMS",
-        file_type_factory=ExternalDataFile,
+        file_type_factory=ExternalDataFile.create,
         file_type_file_patterns=["*.tdms"])
