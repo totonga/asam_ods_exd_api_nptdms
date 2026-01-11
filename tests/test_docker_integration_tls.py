@@ -12,36 +12,24 @@ from grpc_health.v1 import health_pb2, health_pb2_grpc
 from ods_exd_api_box import exd_api, exd_grpc, ods
 
 
-class TestDockerContainer(unittest.TestCase):
+class TestDockerContainerTLS(unittest.TestCase):
+    container_name = "test_container_tls"
+    tls_port = 50052
+    health_check_port = 50053
+
     @classmethod
     def setUpClass(cls):
-        # build Docker-Image
-        result = subprocess.run(
+        subprocess.run(
             ["docker", "build", "-t", "asam-ods-exd-api-nptdms", "."],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"Docker build failed: {result.stderr}")
-
-        # Clean up any existing test container from previous runs
-        subprocess.run(
-            ["docker", "stop", "test_container"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-        subprocess.run(
-            ["docker", "rm", "test_container"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
+            check=True,
         )
 
-        example_file_path = pathlib.Path.joinpath(
+        example_data_path = pathlib.Path.joinpath(
             pathlib.Path(__file__).parent.resolve(), "..", "data")
-        data_folder = pathlib.Path(example_file_path).absolute().resolve()
+        cls.data_folder = pathlib.Path(example_data_path).absolute().resolve()
+        cls.certs_folder = (pathlib.Path(__file__).parent /
+                            "certs").absolute().resolve()
+
         cp = subprocess.run(
             [
                 "docker",
@@ -49,30 +37,40 @@ class TestDockerContainer(unittest.TestCase):
                 "-d",
                 "--rm",
                 "--name",
-                "test_container",
+                cls.container_name,
                 "-p",
-                "50051:50051",
+                f"{cls.tls_port}:{cls.tls_port}",
                 "-p",
-                "50052:50052",
+                f"{cls.health_check_port}:{cls.health_check_port}",
                 "-v",
-                f"{data_folder}:/data",
+                f"{cls.data_folder}:/data",
+                "-v",
+                f"{cls.certs_folder}:/certs",
                 "asam-ods-exd-api-nptdms",
+                "python3",
+                "external_data_file.py",
+                "--port",
+                str(cls.tls_port),
+                "--health-check-enabled",
+                "--health-check-port",
+                str(cls.health_check_port),
+                "--use-tls",
+                "--tls-cert-file",
+                "/certs/server.crt",
+                "--tls-key-file",
+                "/certs/server.key",
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=False,
+            check=True,
         )
-        if cp.returncode != 0:
-            raise RuntimeError(f"Docker run failed: {cp.stderr}")
-        cls.container_id = cp.stdout.strip()
-        cls.__wait_for_port_ready(port=50051)
+        cls.container_id = cp.stdout.decode().strip()
+        cls.__wait_for_port_ready(port=cls.tls_port)
+        cls.__wait_for_port_ready(port=cls.health_check_port)
 
     @classmethod
     def tearDownClass(cls):
-        # stop container
         subprocess.run(
-            ["docker", "stop", "test_container"],
+            ["docker", "stop", cls.container_name],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=False,
@@ -86,21 +84,45 @@ class TestDockerContainer(unittest.TestCase):
             result = sock.connect_ex((host, port))
             sock.close()
             if result == 0:
-                channel = grpc.insecure_channel(f"{host}:{port}")
-                grpc.channel_ready_future(channel).result(timeout=5)
                 return
             if time.time() - start_time > timeout:
                 raise TimeoutError("Port did not become ready in time.")
             time.sleep(0.5)
 
+    def test_tls_structure(self):
+        cert_path = pathlib.Path(__file__).parent / "certs" / "server.crt"
+        with cert_path.open("rb") as cert_file:
+            channel_credentials = grpc.ssl_channel_credentials(
+                root_certificates=cert_file.read())
+
+        with grpc.secure_channel(f"localhost:{self.tls_port}", channel_credentials) as channel:
+            grpc.channel_ready_future(channel).result(timeout=5)
+            service = exd_grpc.ExternalDataReaderStub(channel)
+            handle = service.Open(exd_api.Identifier(
+                url="/data/raw1.tdms", parameters=""), None)
+            try:
+                structure = service.GetStructure(
+                    exd_api.StructureRequest(handle=handle), None)
+                self.assertEqual(structure.name, "raw1.tdms")
+            finally:
+                service.Close(handle, None)
+
+    def _get_tls_channel(self):
+        """Helper to create a TLS-secured channel."""
+        cert_path = pathlib.Path(__file__).parent / "certs" / "server.crt"
+        with cert_path.open("rb") as cert_file:
+            channel_credentials = grpc.ssl_channel_credentials(
+                root_certificates=cert_file.read())
+        return grpc.secure_channel(f"localhost:{self.tls_port}", channel_credentials)
+
     def test_container_health(self):
-        channel = grpc.insecure_channel("localhost:50051")
-        stub = exd_grpc.ExternalDataReaderStub(channel)
-        self.assertIsNotNone(stub)
-        grpc.channel_ready_future(channel).result(timeout=5)
+        with self._get_tls_channel() as channel:
+            stub = exd_grpc.ExternalDataReaderStub(channel)
+            self.assertIsNotNone(stub)
+            grpc.channel_ready_future(channel).result(timeout=5)
 
     def test_structure(self):
-        with grpc.insecure_channel("localhost:50051") as channel:
+        with self._get_tls_channel() as channel:
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
@@ -125,7 +147,7 @@ class TestDockerContainer(unittest.TestCase):
                 service.Close(handle, None)
 
     def test_get_values(self):
-        with grpc.insecure_channel("localhost:50051") as channel:
+        with self._get_tls_channel() as channel:
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
@@ -161,37 +183,62 @@ class TestDockerContainer(unittest.TestCase):
             finally:
                 service.Close(handle, None)
 
+    def test_health_check_service_available(self):
+        """Test that the health check service is accessible on insecure port even with TLS enabled."""
+        channel = grpc.insecure_channel(f"localhost:{self.health_check_port}")
+        stub = health_pb2_grpc.HealthStub(channel)
+        self.assertIsNotNone(stub)
+        grpc.channel_ready_future(channel).result(timeout=5)
+        channel.close()
 
-class TestDockerContainerWithHealthCheck(unittest.TestCase):
+    def test_health_check_status(self):
+        """Test that the health check returns SERVING status for ExternalDataReader."""
+        with grpc.insecure_channel(f"localhost:{self.health_check_port}") as channel:
+            stub = health_pb2_grpc.HealthStub(channel)
+            response = stub.Check(
+                health_pb2.HealthCheckRequest(  # pylint: disable=no-member
+                    service="asam.ods.ExternalDataReader"
+                ),
+                timeout=5,
+            )
+            self.assertEqual(
+                response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
+            )
+
+    def test_health_check_watch(self):
+        """Test that the health check watch stream works."""
+        with grpc.insecure_channel(f"localhost:{self.health_check_port}") as channel:
+            stub = health_pb2_grpc.HealthStub(channel)
+            responses = stub.Watch(
+                health_pb2.HealthCheckRequest(  # pylint: disable=no-member
+                    service="asam.ods.ExternalDataReader"
+                ),
+                timeout=5,
+            )
+            # Get first response
+            first_response = next(responses)
+            self.assertEqual(
+                first_response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
+            )
+
+
+class TestDockerContainerTLSClient(unittest.TestCase):
+    container_name = "test_container_tls_client"
+    tls_port = 50053
+
     @classmethod
     def setUpClass(cls):
-        # build Docker image
-        result = subprocess.run(
+        subprocess.run(
             ["docker", "build", "-t", "asam-ods-exd-api-nptdms", "."],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"Docker build failed: {result.stderr}")
-
-        # Clean up any existing test container from previous runs
-        subprocess.run(
-            ["docker", "stop", "test_container"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-        subprocess.run(
-            ["docker", "rm", "test_container"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
+            check=True,
         )
 
-        example_file_path = pathlib.Path.joinpath(
+        example_data_path = pathlib.Path.joinpath(
             pathlib.Path(__file__).parent.resolve(), "..", "data")
-        data_folder = pathlib.Path(example_file_path).absolute().resolve()
+        cls.data_folder = pathlib.Path(example_data_path).absolute().resolve()
+        cls.certs_folder = (pathlib.Path(__file__).parent /
+                            "certs").absolute().resolve()
+
         cp = subprocess.run(
             [
                 "docker",
@@ -199,37 +246,36 @@ class TestDockerContainerWithHealthCheck(unittest.TestCase):
                 "-d",
                 "--rm",
                 "--name",
-                "test_container",
+                cls.container_name,
                 "-p",
-                "50051:50051",
-                "-p",
-                "50052:50052",
+                f"{cls.tls_port}:{cls.tls_port}",
                 "-v",
-                f"{data_folder}:/data",
+                f"{cls.data_folder}:/data",
+                "-v",
+                f"{cls.certs_folder}:/certs",
                 "asam-ods-exd-api-nptdms",
                 "python3",
                 "external_data_file.py",
-                "--health-check-enabled",
+                "--port",
+                str(cls.tls_port),
+                "--use-tls",
+                "--tls-cert-file",
+                "/certs/server.crt",
+                "--tls-key-file",
+                "/certs/server.key",
+                "--tls-client-ca-file",
+                "/certs/client.crt",
+                "--require-client-cert",
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=False,
+            check=True,
         )
-        if cp.returncode != 0:
-            raise RuntimeError(f"Docker run failed: {cp.stderr}")
-        cls.container_id = cp.stdout.strip()
-        cls.__wait_for_port_ready(port=50051)
+        cls.container_id = cp.stdout.decode().strip()
+        cls.__wait_for_port_ready(port=cls.tls_port)
 
     @classmethod
     def tearDownClass(cls):
-        # stop container
-        subprocess.run(
-            ["docker", "stop", "test_container"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
+        subprocess.run(["docker", "stop", cls.container_name], check=True)
 
     @classmethod
     def __wait_for_port_ready(cls, host="localhost", port=50051, timeout=30):
@@ -239,21 +285,40 @@ class TestDockerContainerWithHealthCheck(unittest.TestCase):
             result = sock.connect_ex((host, port))
             sock.close()
             if result == 0:
-                channel = grpc.insecure_channel(f"{host}:{port}")
-                grpc.channel_ready_future(channel).result(timeout=5)
                 return
             if time.time() - start_time > timeout:
                 raise TimeoutError("Port did not become ready in time.")
             time.sleep(0.5)
 
+    def _get_mtls_channel(self):
+        """Helper to create a mutually-TLS-secured channel with client cert."""
+        server_cert_path = pathlib.Path(
+            __file__).parent / "certs" / "server.crt"
+        client_cert_path = pathlib.Path(
+            __file__).parent / "certs" / "client.crt"
+        client_key_path = pathlib.Path(
+            __file__).parent / "certs" / "client.key"
+
+        with server_cert_path.open("rb") as f:
+            root_certificates = f.read()
+        with client_cert_path.open("rb") as f:
+            client_cert = f.read()
+        with client_key_path.open("rb") as f:
+            client_key = f.read()
+
+        channel_credentials = grpc.ssl_channel_credentials(
+            root_certificates=root_certificates, private_key=client_key, certificate_chain=client_cert
+        )
+        return grpc.secure_channel(f"localhost:{self.tls_port}", channel_credentials)
+
     def test_container_health(self):
-        channel = grpc.insecure_channel("localhost:50051")
-        stub = exd_grpc.ExternalDataReaderStub(channel)
-        self.assertIsNotNone(stub)
-        grpc.channel_ready_future(channel).result(timeout=5)
+        with self._get_mtls_channel() as channel:
+            stub = exd_grpc.ExternalDataReaderStub(channel)
+            self.assertIsNotNone(stub)
+            grpc.channel_ready_future(channel).result(timeout=5)
 
     def test_structure(self):
-        with grpc.insecure_channel("localhost:50051") as channel:
+        with self._get_mtls_channel() as channel:
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
@@ -277,46 +342,8 @@ class TestDockerContainerWithHealthCheck(unittest.TestCase):
             finally:
                 service.Close(handle, None)
 
-    def test_health_check_service_available(self):
-        """Test that the health check service is accessible on port 50052."""
-        channel = grpc.insecure_channel("localhost:50052")
-        stub = health_pb2_grpc.HealthStub(channel)
-        self.assertIsNotNone(stub)
-        grpc.channel_ready_future(channel).result(timeout=5)
-        channel.close()
-
-    def test_health_check_status(self):
-        """Test that the health check returns SERVING status for ExternalDataReader."""
-        with grpc.insecure_channel("localhost:50052") as channel:
-            stub = health_pb2_grpc.HealthStub(channel)
-            response = stub.Check(
-                health_pb2.HealthCheckRequest(  # pylint: disable=no-member
-                    service="asam.ods.ExternalDataReader"
-                ),
-                timeout=5,
-            )
-            self.assertEqual(
-                response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
-            )
-
-    def test_health_check_watch(self):
-        """Test that the health check watch stream works."""
-        with grpc.insecure_channel("localhost:50052") as channel:
-            stub = health_pb2_grpc.HealthStub(channel)
-            responses = stub.Watch(
-                health_pb2.HealthCheckRequest(  # pylint: disable=no-member
-                    service="asam.ods.ExternalDataReader"
-                ),
-                timeout=5,
-            )
-            # Get first response
-            first_response = next(responses)
-            self.assertEqual(
-                first_response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
-            )
-
     def test_get_values(self):
-        with grpc.insecure_channel("localhost:50051") as channel:
+        with self._get_mtls_channel() as channel:
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(

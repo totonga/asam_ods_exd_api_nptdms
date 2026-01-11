@@ -4,19 +4,34 @@
     "files.trimTrailingWhitespace": true,
     "files.autoSave": "onFocusChange",
     "flake8.args": [
-        "--max-line-length=119"
+        "--max-line-length=109"
     ],
     "black-formatter.args": [
-        "--line-length=119"
+        "--line-length=109"
     ],
     "pylint.args": [
-        "--max-line-length=119"
+        "--max-line-length=109"
     ],
     "editor.codeActionsOnSave": {
         "source.organizeImports": "always",
     },
     "cSpell.words": [
-        "dtypes"
+        "appuser",
+        "DCOMPLEX",
+        "dtypes",
+        "grpcio",
+        "isort",
+        "issubdtype",
+        "jupyterlab",
+        "mypy",
+        "nptdms",
+        "protoc",
+        "pylint",
+        "pyproject",
+        "setuptools",
+        "Tdms",
+        "tobytes",
+        "totonga"
     ],
     "python.testing.unittestArgs": [
         "-v",
