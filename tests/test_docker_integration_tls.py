@@ -1,14 +1,15 @@
-import pathlib
-import grpc
-import unittest
-import time
-import subprocess
-import socket
 import logging
-from google.protobuf.json_format import MessageToJson
+import pathlib
+import socket
+import subprocess
+import time
+import unittest
 
-from ods_exd_api_box import ods, exd_grpc, exd_api
-from grpc_health.v1 import health_pb2_grpc, health_pb2
+import grpc
+from google.protobuf.json_format import MessageToJson
+from grpc_health.v1 import health_pb2, health_pb2_grpc
+
+from ods_exd_api_box import exd_api, exd_grpc, ods
 
 
 class TestDockerContainerTLS(unittest.TestCase):
@@ -24,26 +25,40 @@ class TestDockerContainerTLS(unittest.TestCase):
         )
 
         example_data_path = pathlib.Path.joinpath(
-            pathlib.Path(__file__).parent.resolve(), '..', 'data')
+            pathlib.Path(__file__).parent.resolve(), "..", "data")
         cls.data_folder = pathlib.Path(example_data_path).absolute().resolve()
         cls.certs_folder = (pathlib.Path(__file__).parent /
-                            'certs').absolute().resolve()
+                            "certs").absolute().resolve()
 
         cp = subprocess.run(
             [
-                "docker", "run", "-d", "--rm", "--name", cls.container_name,
-                "-p", f"{cls.tls_port}:{cls.tls_port}",
-                "-p", f"{cls.health_check_port}:{cls.health_check_port}",
-                "-v", f"{cls.data_folder}:/data",
-                "-v", f"{cls.certs_folder}:/certs",
+                "docker",
+                "run",
+                "-d",
+                "--rm",
+                "--name",
+                cls.container_name,
+                "-p",
+                f"{cls.tls_port}:{cls.tls_port}",
+                "-p",
+                f"{cls.health_check_port}:{cls.health_check_port}",
+                "-v",
+                f"{cls.data_folder}:/data",
+                "-v",
+                f"{cls.certs_folder}:/certs",
                 "asam-ods-exd-api-nptdms",
-                "python3", "external_data_file.py",
-                "--port", str(cls.tls_port),
+                "python3",
+                "external_data_file.py",
+                "--port",
+                str(cls.tls_port),
                 "--health-check-enabled",
-                "--health-check-port", str(cls.health_check_port),
+                "--health-check-port",
+                str(cls.health_check_port),
                 "--use-tls",
-                "--tls-cert-file", "/certs/server.crt",
-                "--tls-key-file", "/certs/server.key",
+                "--tls-cert-file",
+                "/certs/server.crt",
+                "--tls-key-file",
+                "/certs/server.key",
             ],
             stdout=subprocess.PIPE,
             check=True,
@@ -58,7 +73,7 @@ class TestDockerContainerTLS(unittest.TestCase):
             ["docker", "stop", cls.container_name],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            check=False
+            check=False,
         )
 
     @classmethod
@@ -75,8 +90,8 @@ class TestDockerContainerTLS(unittest.TestCase):
             time.sleep(0.5)
 
     def test_tls_structure(self):
-        cert_path = pathlib.Path(__file__).parent / 'certs' / 'server.crt'
-        with cert_path.open('rb') as cert_file:
+        cert_path = pathlib.Path(__file__).parent / "certs" / "server.crt"
+        with cert_path.open("rb") as cert_file:
             channel_credentials = grpc.ssl_channel_credentials(
                 root_certificates=cert_file.read())
 
@@ -84,19 +99,18 @@ class TestDockerContainerTLS(unittest.TestCase):
             grpc.channel_ready_future(channel).result(timeout=5)
             service = exd_grpc.ExternalDataReaderStub(channel)
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
             try:
                 structure = service.GetStructure(
                     exd_api.StructureRequest(handle=handle), None)
-                self.assertEqual(structure.name, 'raw1.tdms')
+                self.assertEqual(structure.name, "raw1.tdms")
             finally:
                 service.Close(handle, None)
 
     def _get_tls_channel(self):
         """Helper to create a TLS-secured channel."""
-        cert_path = pathlib.Path(__file__).parent / 'certs' / 'server.crt'
-        with cert_path.open('rb') as cert_file:
+        cert_path = pathlib.Path(__file__).parent / "certs" / "server.crt"
+        with cert_path.open("rb") as cert_file:
             channel_credentials = grpc.ssl_channel_credentials(
                 root_certificates=cert_file.read())
         return grpc.secure_channel(f"localhost:{self.tls_port}", channel_credentials)
@@ -112,14 +126,13 @@ class TestDockerContainerTLS(unittest.TestCase):
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
             try:
                 structure = service.GetStructure(
                     exd_api.StructureRequest(handle=handle), None)
                 logging.info(MessageToJson(structure))
 
-                self.assertEqual(structure.name, 'raw1.tdms')
+                self.assertEqual(structure.name, "raw1.tdms")
                 self.assertEqual(len(structure.groups), 1)
                 self.assertEqual(structure.groups[0].number_of_rows, 2000)
                 self.assertEqual(len(structure.groups[0].channels), 7)
@@ -138,16 +151,14 @@ class TestDockerContainerTLS(unittest.TestCase):
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
 
             try:
-                values = service.GetValues(exd_api.ValuesRequest(handle=handle,
-                                                                 group_id=0,
-                                                                 channel_ids=[
-                                                                     0, 1],
-                                                                 start=0,
-                                                                 limit=4), None)
+                values = service.GetValues(
+                    exd_api.ValuesRequest(handle=handle, group_id=0, channel_ids=[
+                                          0, 1], start=0, limit=4),
+                    None,
+                )
                 self.assertEqual(values.id, 0)
                 self.assertEqual(len(values.channels), 2)
                 self.assertEqual(values.channels[0].id, 0)
@@ -156,12 +167,18 @@ class TestDockerContainerTLS(unittest.TestCase):
 
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[0].values.double_array.values, [
-                    -0.18402661214026306, 0.1480147709585864, -0.24506363109225746, -0.29725028229621264])
+                self.assertSequenceEqual(
+                    values.channels[0].values.double_array.values,
+                    [-0.18402661214026306, 0.1480147709585864, -
+                        0.24506363109225746, -0.29725028229621264],
+                )
                 self.assertEqual(
                     values.channels[1].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[1].values.double_array.values, [
-                    1.0303048799096652, 0.6497390667439802, 0.7638782921842098, 0.5508590960417493])
+                self.assertSequenceEqual(
+                    values.channels[1].values.double_array.values,
+                    [1.0303048799096652, 0.6497390667439802,
+                        0.7638782921842098, 0.5508590960417493],
+                )
 
             finally:
                 service.Close(handle, None)
@@ -180,11 +197,13 @@ class TestDockerContainerTLS(unittest.TestCase):
             stub = health_pb2_grpc.HealthStub(channel)
             response = stub.Check(
                 health_pb2.HealthCheckRequest(  # pylint: disable=no-member
-                    service="asam.ods.ExternalDataReader"),
-                timeout=5
+                    service="asam.ods.ExternalDataReader"
+                ),
+                timeout=5,
             )
             self.assertEqual(
-                response.status, health_pb2.HealthCheckResponse.SERVING)  # pylint: disable=no-member
+                response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
+            )
 
     def test_health_check_watch(self):
         """Test that the health check watch stream works."""
@@ -192,13 +211,15 @@ class TestDockerContainerTLS(unittest.TestCase):
             stub = health_pb2_grpc.HealthStub(channel)
             responses = stub.Watch(
                 health_pb2.HealthCheckRequest(  # pylint: disable=no-member
-                    service="asam.ods.ExternalDataReader"),
-                timeout=5
+                    service="asam.ods.ExternalDataReader"
+                ),
+                timeout=5,
             )
             # Get first response
             first_response = next(responses)
-            self.assertEqual(first_response.status,
-                             health_pb2.HealthCheckResponse.SERVING)  # pylint: disable=no-member
+            self.assertEqual(
+                first_response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
+            )
 
 
 class TestDockerContainerTLSClient(unittest.TestCase):
@@ -213,24 +234,37 @@ class TestDockerContainerTLSClient(unittest.TestCase):
         )
 
         example_data_path = pathlib.Path.joinpath(
-            pathlib.Path(__file__).parent.resolve(), '..', 'data')
+            pathlib.Path(__file__).parent.resolve(), "..", "data")
         cls.data_folder = pathlib.Path(example_data_path).absolute().resolve()
         cls.certs_folder = (pathlib.Path(__file__).parent /
-                            'certs').absolute().resolve()
+                            "certs").absolute().resolve()
 
         cp = subprocess.run(
             [
-                "docker", "run", "-d", "--rm", "--name", cls.container_name,
-                "-p", f"{cls.tls_port}:{cls.tls_port}",
-                "-v", f"{cls.data_folder}:/data",
-                "-v", f"{cls.certs_folder}:/certs",
+                "docker",
+                "run",
+                "-d",
+                "--rm",
+                "--name",
+                cls.container_name,
+                "-p",
+                f"{cls.tls_port}:{cls.tls_port}",
+                "-v",
+                f"{cls.data_folder}:/data",
+                "-v",
+                f"{cls.certs_folder}:/certs",
                 "asam-ods-exd-api-nptdms",
-                "python3", "external_data_file.py",
-                "--port", str(cls.tls_port),
+                "python3",
+                "external_data_file.py",
+                "--port",
+                str(cls.tls_port),
                 "--use-tls",
-                "--tls-cert-file", "/certs/server.crt",
-                "--tls-key-file", "/certs/server.key",
-                "--tls-client-ca-file", "/certs/client.crt",
+                "--tls-cert-file",
+                "/certs/server.crt",
+                "--tls-key-file",
+                "/certs/server.key",
+                "--tls-client-ca-file",
+                "/certs/client.crt",
                 "--require-client-cert",
             ],
             stdout=subprocess.PIPE,
@@ -259,23 +293,22 @@ class TestDockerContainerTLSClient(unittest.TestCase):
     def _get_mtls_channel(self):
         """Helper to create a mutually-TLS-secured channel with client cert."""
         server_cert_path = pathlib.Path(
-            __file__).parent / 'certs' / 'server.crt'
+            __file__).parent / "certs" / "server.crt"
         client_cert_path = pathlib.Path(
-            __file__).parent / 'certs' / 'client.crt'
+            __file__).parent / "certs" / "client.crt"
         client_key_path = pathlib.Path(
-            __file__).parent / 'certs' / 'client.key'
+            __file__).parent / "certs" / "client.key"
 
-        with server_cert_path.open('rb') as f:
+        with server_cert_path.open("rb") as f:
             root_certificates = f.read()
-        with client_cert_path.open('rb') as f:
+        with client_cert_path.open("rb") as f:
             client_cert = f.read()
-        with client_key_path.open('rb') as f:
+        with client_key_path.open("rb") as f:
             client_key = f.read()
 
         channel_credentials = grpc.ssl_channel_credentials(
-            root_certificates=root_certificates,
-            private_key=client_key,
-            certificate_chain=client_cert)
+            root_certificates=root_certificates, private_key=client_key, certificate_chain=client_cert
+        )
         return grpc.secure_channel(f"localhost:{self.tls_port}", channel_credentials)
 
     def test_container_health(self):
@@ -289,14 +322,13 @@ class TestDockerContainerTLSClient(unittest.TestCase):
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
             try:
                 structure = service.GetStructure(
                     exd_api.StructureRequest(handle=handle), None)
                 logging.info(MessageToJson(structure))
 
-                self.assertEqual(structure.name, 'raw1.tdms')
+                self.assertEqual(structure.name, "raw1.tdms")
                 self.assertEqual(len(structure.groups), 1)
                 self.assertEqual(structure.groups[0].number_of_rows, 2000)
                 self.assertEqual(len(structure.groups[0].channels), 7)
@@ -315,16 +347,14 @@ class TestDockerContainerTLSClient(unittest.TestCase):
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
 
             try:
-                values = service.GetValues(exd_api.ValuesRequest(handle=handle,
-                                                                 group_id=0,
-                                                                 channel_ids=[
-                                                                     0, 1],
-                                                                 start=0,
-                                                                 limit=4), None)
+                values = service.GetValues(
+                    exd_api.ValuesRequest(handle=handle, group_id=0, channel_ids=[
+                                          0, 1], start=0, limit=4),
+                    None,
+                )
                 self.assertEqual(values.id, 0)
                 self.assertEqual(len(values.channels), 2)
                 self.assertEqual(values.channels[0].id, 0)
@@ -333,12 +363,18 @@ class TestDockerContainerTLSClient(unittest.TestCase):
 
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[0].values.double_array.values, [
-                    -0.18402661214026306, 0.1480147709585864, -0.24506363109225746, -0.29725028229621264])
+                self.assertSequenceEqual(
+                    values.channels[0].values.double_array.values,
+                    [-0.18402661214026306, 0.1480147709585864, -
+                        0.24506363109225746, -0.29725028229621264],
+                )
                 self.assertEqual(
                     values.channels[1].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[1].values.double_array.values, [
-                    1.0303048799096652, 0.6497390667439802, 0.7638782921842098, 0.5508590960417493])
+                self.assertSequenceEqual(
+                    values.channels[1].values.double_array.values,
+                    [1.0303048799096652, 0.6497390667439802,
+                        0.7638782921842098, 0.5508590960417493],
+                )
 
             finally:
                 service.Close(handle, None)

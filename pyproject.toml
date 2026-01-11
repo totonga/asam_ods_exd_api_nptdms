@@ -41,3 +41,55 @@ packages = ["ods_exd_api_box"]
 
 [tool.setuptools.package-data]
 ods_exd_api_box = ["py.typed", "proto/py.typed"]
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-module-docstring",
+    "missing-function-docstring",
+    "missing-class-docstring",
+]
+
+[tool.pylint.format]
+max-line-length = 109
+
+[tool.black]
+line-length = 109
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "ods_exd_api_box.proto.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ods_pb2"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ods_external_data_pb2"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "ods_external_data_pb2_grpc"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "grpc"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "grpc_health.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "nptdms"
+ignore_missing_imports = true

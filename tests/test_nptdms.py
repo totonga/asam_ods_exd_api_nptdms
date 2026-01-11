@@ -1,6 +1,5 @@
-import os
-
 import logging
+import os
 import pathlib
 import unittest
 
@@ -11,14 +10,15 @@ class TestStringMethods(unittest.TestCase):
     log = logging.getLogger(__name__)
 
     def __get_example_file_path(self, file_name):
-        example_file_path = pathlib.Path.joinpath(pathlib.Path(
-            __file__).parent.resolve(), '..', 'data', file_name)
+        example_file_path = pathlib.Path.joinpath(
+            pathlib.Path(__file__).parent.resolve(), "..", "data", file_name
+        )
         return pathlib.Path(example_file_path).resolve()
 
     def test_open(self):
-        file_path = self.__get_example_file_path('raw1.tdms')
+        file_path = self.__get_example_file_path("raw1.tdms")
         self.assertTrue(os.path.isfile(file_path))
-        self.log.info(str(file_path).encode('utf-8'))
+        self.log.info(str(file_path).encode("utf-8"))
 
         with TdmsFile.open(file_path) as tdms_file:
             file_name_val = tdms_file.properties["name"]
@@ -42,9 +42,9 @@ class TestStringMethods(unittest.TestCase):
                     self.log.info(f"   d: {channel[0:4]}")
 
     def test_open_meta(self):
-        file_path = self.__get_example_file_path('raw1.tdms')
+        file_path = self.__get_example_file_path("raw1.tdms")
         self.assertTrue(os.path.isfile(file_path))
-        self.log.info(str(file_path).encode('utf-8'))
+        self.log.info(str(file_path).encode("utf-8"))
 
         with TdmsFile.read_metadata(file_path) as tdms_file:
             file_name_val = tdms_file.properties["name"]

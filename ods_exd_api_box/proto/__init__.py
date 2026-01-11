@@ -5,6 +5,9 @@ This is necessary to integrate grpc stubs into a package
 because the generated code uses relative imports.
 """
 
+# fmt: off
+# isort: skip_file
+
 import sys
 import os
 import importlib.util
@@ -34,5 +37,7 @@ else:
     ods = _load_proto_module("ods_pb2")
     exd_api = _load_proto_module("ods_external_data_pb2")
     exd_grpc = _load_proto_module("ods_external_data_pb2_grpc")
+
+# fmt: on
 
 __all__ = ['ods', 'exd_api', 'exd_grpc']

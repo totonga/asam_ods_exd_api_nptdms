@@ -1,4 +1,5 @@
 """Abstract interface for external data file handling."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

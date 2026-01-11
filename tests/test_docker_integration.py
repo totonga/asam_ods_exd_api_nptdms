@@ -1,47 +1,76 @@
-import pathlib
-import grpc
-import unittest
-import time
-import subprocess
 import logging
-from google.protobuf.json_format import MessageToJson
+import pathlib
 import socket
+import subprocess
+import time
+import unittest
 
-from ods_exd_api_box import ods, exd_grpc, exd_api
-from grpc_health.v1 import health_pb2_grpc, health_pb2
+import grpc
+from google.protobuf.json_format import MessageToJson
+from grpc_health.v1 import health_pb2, health_pb2_grpc
+
+from ods_exd_api_box import exd_api, exd_grpc, ods
 
 
 class TestDockerContainer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Docker-Image bauen
-        subprocess.run(
-            ["docker", "build", "-t", "asam-ods-exd-api-nptdms", "."], check=True)
+        # build Docker-Image
+        result = subprocess.run(
+            ["docker", "build", "-t", "asam-ods-exd-api-nptdms", "."],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"Docker build failed: {result.stderr}")
 
         # Clean up any existing test container from previous runs
         subprocess.run(
             ["docker", "stop", "test_container"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            check=False
+            check=False,
+        )
+        subprocess.run(
+            ["docker", "rm", "test_container"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
         )
 
-        example_file_path = pathlib.Path.joinpath(pathlib.Path(
-            __file__).parent.resolve(), '..', 'data')
+        example_file_path = pathlib.Path.joinpath(
+            pathlib.Path(__file__).parent.resolve(), "..", "data")
         data_folder = pathlib.Path(example_file_path).absolute().resolve()
         cp = subprocess.run(
-            ["docker", "run", "-d", "--rm", "--name", "test_container",
-             "-p", "50051:50051", "-p", "50052:50052", "-v", f"{data_folder}:/data",
-             "asam-ods-exd-api-nptdms"],
+            [
+                "docker",
+                "run",
+                "-d",
+                "--rm",
+                "--name",
+                "test_container",
+                "-p",
+                "50051:50051",
+                "-p",
+                "50052:50052",
+                "-v",
+                f"{data_folder}:/data",
+                "asam-ods-exd-api-nptdms",
+            ],
             stdout=subprocess.PIPE,
-            check=True
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
         )
-        cls.container_id = cp.stdout.decode().strip()
+        if cp.returncode != 0:
+            raise RuntimeError(f"Docker run failed: {cp.stderr}")
+        cls.container_id = cp.stdout.strip()
         cls.__wait_for_port_ready(port=50051)
 
     @classmethod
     def tearDownClass(cls):
-        # Container stoppen
+        # stop container
         subprocess.run(
             ["docker", "stop", "test_container"],
             stdout=subprocess.DEVNULL,
@@ -75,14 +104,13 @@ class TestDockerContainer(unittest.TestCase):
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
             try:
                 structure = service.GetStructure(
                     exd_api.StructureRequest(handle=handle), None)
                 logging.info(MessageToJson(structure))
 
-                self.assertEqual(structure.name, 'raw1.tdms')
+                self.assertEqual(structure.name, "raw1.tdms")
                 self.assertEqual(len(structure.groups), 1)
                 self.assertEqual(structure.groups[0].number_of_rows, 2000)
                 self.assertEqual(len(structure.groups[0].channels), 7)
@@ -101,17 +129,14 @@ class TestDockerContainer(unittest.TestCase):
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
 
             try:
-                values = service.GetValues(exd_api.ValuesRequest(
-                    handle=handle,
-                    group_id=0,
-                    channel_ids=[
-                        0, 1],
-                    start=0,
-                    limit=4), None)
+                values = service.GetValues(
+                    exd_api.ValuesRequest(handle=handle, group_id=0, channel_ids=[
+                                          0, 1], start=0, limit=4),
+                    None,
+                )
                 self.assertEqual(values.id, 0)
                 self.assertEqual(len(values.channels), 2)
                 self.assertEqual(values.channels[0].id, 0)
@@ -120,12 +145,18 @@ class TestDockerContainer(unittest.TestCase):
 
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[0].values.double_array.values, [
-                    -0.18402661214026306, 0.1480147709585864, -0.24506363109225746, -0.29725028229621264])
+                self.assertSequenceEqual(
+                    values.channels[0].values.double_array.values,
+                    [-0.18402661214026306, 0.1480147709585864, -
+                        0.24506363109225746, -0.29725028229621264],
+                )
                 self.assertEqual(
                     values.channels[1].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[1].values.double_array.values, [
-                    1.0303048799096652, 0.6497390667439802, 0.7638782921842098, 0.5508590960417493])
+                self.assertSequenceEqual(
+                    values.channels[1].values.double_array.values,
+                    [1.0303048799096652, 0.6497390667439802,
+                        0.7638782921842098, 0.5508590960417493],
+                )
 
             finally:
                 service.Close(handle, None)
@@ -134,34 +165,65 @@ class TestDockerContainer(unittest.TestCase):
 class TestDockerContainerWithHealthCheck(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Docker-Image bauen
-        subprocess.run(
-            ["docker", "build", "-t", "asam-ods-exd-api-nptdms", "."], check=True)
+        # build Docker image
+        result = subprocess.run(
+            ["docker", "build", "-t", "asam-ods-exd-api-nptdms", "."],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"Docker build failed: {result.stderr}")
 
         # Clean up any existing test container from previous runs
         subprocess.run(
             ["docker", "stop", "test_container"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            check=False
+            check=False,
+        )
+        subprocess.run(
+            ["docker", "rm", "test_container"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
         )
 
-        example_file_path = pathlib.Path.joinpath(pathlib.Path(
-            __file__).parent.resolve(), '..', 'data')
+        example_file_path = pathlib.Path.joinpath(
+            pathlib.Path(__file__).parent.resolve(), "..", "data")
         data_folder = pathlib.Path(example_file_path).absolute().resolve()
         cp = subprocess.run(
-            ["docker", "run", "-d", "--rm", "--name", "test_container",
-             "-p", "50051:50051", "-p", "50052:50052", "-v", f"{data_folder}:/data",
-             "asam-ods-exd-api-nptdms", "python3", "external_data_file.py", "--health-check-enabled"],
+            [
+                "docker",
+                "run",
+                "-d",
+                "--rm",
+                "--name",
+                "test_container",
+                "-p",
+                "50051:50051",
+                "-p",
+                "50052:50052",
+                "-v",
+                f"{data_folder}:/data",
+                "asam-ods-exd-api-nptdms",
+                "python3",
+                "external_data_file.py",
+                "--health-check-enabled",
+            ],
             stdout=subprocess.PIPE,
-            check=True
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
         )
-        cls.container_id = cp.stdout.decode().strip()
+        if cp.returncode != 0:
+            raise RuntimeError(f"Docker run failed: {cp.stderr}")
+        cls.container_id = cp.stdout.strip()
         cls.__wait_for_port_ready(port=50051)
 
     @classmethod
     def tearDownClass(cls):
-        # Container stoppen
+        # stop container
         subprocess.run(
             ["docker", "stop", "test_container"],
             stdout=subprocess.DEVNULL,
@@ -195,14 +257,13 @@ class TestDockerContainerWithHealthCheck(unittest.TestCase):
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
             try:
                 structure = service.GetStructure(
                     exd_api.StructureRequest(handle=handle), None)
                 logging.info(MessageToJson(structure))
 
-                self.assertEqual(structure.name, 'raw1.tdms')
+                self.assertEqual(structure.name, "raw1.tdms")
                 self.assertEqual(len(structure.groups), 1)
                 self.assertEqual(structure.groups[0].number_of_rows, 2000)
                 self.assertEqual(len(structure.groups[0].channels), 7)
@@ -230,11 +291,13 @@ class TestDockerContainerWithHealthCheck(unittest.TestCase):
             stub = health_pb2_grpc.HealthStub(channel)
             response = stub.Check(
                 health_pb2.HealthCheckRequest(  # pylint: disable=no-member
-                    service="asam.ods.ExternalDataReader"),
-                timeout=5
+                    service="asam.ods.ExternalDataReader"
+                ),
+                timeout=5,
             )
             self.assertEqual(
-                response.status, health_pb2.HealthCheckResponse.SERVING)  # pylint: disable=no-member
+                response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
+            )
 
     def test_health_check_watch(self):
         """Test that the health check watch stream works."""
@@ -242,29 +305,29 @@ class TestDockerContainerWithHealthCheck(unittest.TestCase):
             stub = health_pb2_grpc.HealthStub(channel)
             responses = stub.Watch(
                 health_pb2.HealthCheckRequest(  # pylint: disable=no-member
-                    service="asam.ods.ExternalDataReader"),
-                timeout=5
+                    service="asam.ods.ExternalDataReader"
+                ),
+                timeout=5,
             )
             # Get first response
             first_response = next(responses)
-            self.assertEqual(first_response.status,
-                             health_pb2.HealthCheckResponse.SERVING)  # pylint: disable=no-member
+            self.assertEqual(
+                first_response.status, health_pb2.HealthCheckResponse.SERVING  # pylint: disable=no-member
+            )
 
     def test_get_values(self):
         with grpc.insecure_channel("localhost:50051") as channel:
             service = exd_grpc.ExternalDataReaderStub(channel)
 
             handle = service.Open(exd_api.Identifier(
-                url="/data/raw1.tdms",
-                parameters=""), None)
+                url="/data/raw1.tdms", parameters=""), None)
 
             try:
-                values = service.GetValues(exd_api.ValuesRequest(handle=handle,
-                                                                 group_id=0,
-                                                                 channel_ids=[
-                                                                     0, 1],
-                                                                 start=0,
-                                                                 limit=4), None)
+                values = service.GetValues(
+                    exd_api.ValuesRequest(handle=handle, group_id=0, channel_ids=[
+                                          0, 1], start=0, limit=4),
+                    None,
+                )
                 self.assertEqual(values.id, 0)
                 self.assertEqual(len(values.channels), 2)
                 self.assertEqual(values.channels[0].id, 0)
@@ -273,12 +336,18 @@ class TestDockerContainerWithHealthCheck(unittest.TestCase):
 
                 self.assertEqual(
                     values.channels[0].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[0].values.double_array.values, [
-                    -0.18402661214026306, 0.1480147709585864, -0.24506363109225746, -0.29725028229621264])
+                self.assertSequenceEqual(
+                    values.channels[0].values.double_array.values,
+                    [-0.18402661214026306, 0.1480147709585864, -
+                        0.24506363109225746, -0.29725028229621264],
+                )
                 self.assertEqual(
                     values.channels[1].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-                self.assertSequenceEqual(values.channels[1].values.double_array.values, [
-                    1.0303048799096652, 0.6497390667439802, 0.7638782921842098, 0.5508590960417493])
+                self.assertSequenceEqual(
+                    values.channels[1].values.double_array.values,
+                    [1.0303048799096652, 0.6497390667439802,
+                        0.7638782921842098, 0.5508590960417493],
+                )
 
             finally:
                 service.Close(handle, None)
