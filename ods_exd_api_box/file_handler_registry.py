@@ -33,7 +33,7 @@ class FileHandlerRegistry:
     def register(cls,
                  file_type_name: str,
                  factory: Callable[[str, str], ExdFileInterface],
-                 file_patterns: list[str] = None
+                 file_patterns: list[str] | None = None
                  ) -> None:
         """Register a file handler factory for a specific file type.
 

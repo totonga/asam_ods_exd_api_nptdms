@@ -231,7 +231,7 @@ def serve(server_config: ServerConfig | None = None):
 def serve_plugin(
     file_type_name: str,
     file_type_factory: Callable[[str, str], ExdFileInterface],
-    file_type_file_patterns: list[str] = None,
+    file_type_file_patterns: list[str] | None = None,
 ):
     """Starts the gRPC server for a specific external data file type plugin.
 
