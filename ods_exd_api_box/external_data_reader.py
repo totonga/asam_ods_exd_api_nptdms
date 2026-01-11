@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import threading
+import time
 from urllib.parse import urlparse, unquote
 from urllib.request import url2pathname
 
@@ -22,6 +23,7 @@ class FileMapEntry:
     """Entry in the file map."""
     file: ExdFileInterface
     ref_count: int = 0
+    last_access_time: float = field(default_factory=time.time)
 
 
 class ExternalDataReader(exd_grpc.ExternalDataReader):
@@ -129,6 +131,7 @@ class ExternalDataReader(exd_grpc.ExternalDataReader):
         if entry is None:
             raise KeyError(
                 f"Connection URL '{connection_url}' not found.")
+        entry.last_access_time = time.time()
         return entry.file, identifier
 
     def __close_file(self, handle: exd_api.Handle) -> None:
