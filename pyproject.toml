@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asam-ods-exd-api-nptdms"
+version = "0.1.0"
+description = "ASAM ODS EXD API implementation to read external data from NI TDMS files."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "totonga"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "grpcio>=1.76.0,<2.0.0",
+    "grpcio-health-checking>=1.76.0,<2.0.0",
+    "grpcio-tools>=1.76.0,<2.0.0",
+    "npTDMS>=1.10.0,<2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "coverage>=7.0",
+    "isort>=5.12",
+    "jupyterlab>=4.0",
+    "mypy>=1.5",
+    "types-protobuf>=4.0",
+    "types-grpcio>=1.53",
+    "types-grpcio-health-checking>=1.53",
+]
+
+[project.urls]
+Homepage = "https://github.com/totonga/asam_ods_exd_api_nptdms"
+
+[tool.setuptools]
+packages = ["ods_exd_api_box"]
+
+[tool.setuptools.package-data]
+ods_exd_api_box = ["py.typed", "proto/py.typed"]

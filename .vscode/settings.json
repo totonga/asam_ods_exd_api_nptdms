@@ -16,10 +16,16 @@
         "source.organizeImports": "always",
     },
     "cSpell.words": [
+        "appuser",
+        "DCOMPLEX",
         "dtypes",
         "issubdtype",
         "nptdms",
-        "Tdms"
+        "protoc",
+        "pyproject",
+        "Tdms",
+        "tobytes",
+        "totonga"
     ],
     "python.testing.unittestArgs": [
         "-v",

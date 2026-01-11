@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from typing import override
+from typing import Any, override
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class ExternalDataFile(ExdFileInterface):
             # Special about the TDMS format is that it allows different length channels in a single group.
             # So there needs to be some mapping for the ASAM EXD API which only allows a single
             # `number_of_rows` for a single group.
-            channels_by_len_dictionary = {}
+            channels_by_len_dictionary: dict[int, list[dict[str, Any]]] = {}
             for channel_index, channel in enumerate(group.channels(), start=0):
                 number_of_rows = self.__get_channel_length(channel)
                 if number_of_rows not in channels_by_len_dictionary:
