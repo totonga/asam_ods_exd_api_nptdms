@@ -8,11 +8,13 @@ import logging
 from google.protobuf.json_format import MessageToJson
 
 from ods_exd_api_box import ods, exd_grpc, exd_api
+from grpc_health.v1 import health_pb2_grpc, health_pb2
 
 
 class TestDockerContainerTLS(unittest.TestCase):
     container_name = "test_container_tls"
     tls_port = 50052
+    health_check_port = 50053
 
     @classmethod
     def setUpClass(cls):
@@ -31,11 +33,14 @@ class TestDockerContainerTLS(unittest.TestCase):
             [
                 "docker", "run", "-d", "--rm", "--name", cls.container_name,
                 "-p", f"{cls.tls_port}:{cls.tls_port}",
+                "-p", f"{cls.health_check_port}:{cls.health_check_port}",
                 "-v", f"{cls.data_folder}:/data",
                 "-v", f"{cls.certs_folder}:/certs",
                 "asam-ods-exd-api-nptdms",
                 "python3", "external_data_file.py",
                 "--port", str(cls.tls_port),
+                "--health-check-enabled",
+                "--health-check-port", str(cls.health_check_port),
                 "--use-tls",
                 "--tls-cert-file", "/certs/server.crt",
                 "--tls-key-file", "/certs/server.key",
@@ -45,10 +50,16 @@ class TestDockerContainerTLS(unittest.TestCase):
         )
         cls.container_id = cp.stdout.decode().strip()
         cls.__wait_for_port_ready(port=cls.tls_port)
+        cls.__wait_for_port_ready(port=cls.health_check_port)
 
     @classmethod
     def tearDownClass(cls):
-        subprocess.run(["docker", "stop", cls.container_name], check=True)
+        subprocess.run(
+            ["docker", "stop", cls.container_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False
+        )
 
     @classmethod
     def __wait_for_port_ready(cls, host="localhost", port=50051, timeout=30):
@@ -154,6 +165,40 @@ class TestDockerContainerTLS(unittest.TestCase):
 
             finally:
                 service.Close(handle, None)
+
+    def test_health_check_service_available(self):
+        """Test that the health check service is accessible on insecure port even with TLS enabled."""
+        channel = grpc.insecure_channel(f"localhost:{self.health_check_port}")
+        stub = health_pb2_grpc.HealthStub(channel)
+        self.assertIsNotNone(stub)
+        grpc.channel_ready_future(channel).result(timeout=5)
+        channel.close()
+
+    def test_health_check_status(self):
+        """Test that the health check returns SERVING status for ExternalDataReader."""
+        with grpc.insecure_channel(f"localhost:{self.health_check_port}") as channel:
+            stub = health_pb2_grpc.HealthStub(channel)
+            response = stub.Check(
+                health_pb2.HealthCheckRequest(  # pylint: disable=no-member
+                    service="asam.ods.ExternalDataReader"),
+                timeout=5
+            )
+            self.assertEqual(
+                response.status, health_pb2.HealthCheckResponse.SERVING)  # pylint: disable=no-member
+
+    def test_health_check_watch(self):
+        """Test that the health check watch stream works."""
+        with grpc.insecure_channel(f"localhost:{self.health_check_port}") as channel:
+            stub = health_pb2_grpc.HealthStub(channel)
+            responses = stub.Watch(
+                health_pb2.HealthCheckRequest(  # pylint: disable=no-member
+                    service="asam.ods.ExternalDataReader"),
+                timeout=5
+            )
+            # Get first response
+            first_response = next(responses)
+            self.assertEqual(first_response.status,
+                             health_pb2.HealthCheckResponse.SERVING)  # pylint: disable=no-member
 
 
 class TestDockerContainerTLSClient(unittest.TestCase):
