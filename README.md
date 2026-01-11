@@ -64,3 +64,37 @@ To start the Docker container:
 ```
 docker run -v /path/to/local/data:/data -p 50051:50051 asam-ods-exd-api
 ```
+
+### TLS / SSL
+
+The server can be run in TLS mode by passing `--use-tls` together with paths to a PEM encoded certificate and private key. Mount a directory that contains your certificates and start the container with the full command so you can append the TLS flags:
+
+```
+docker run \
+	-v /path/to/local/data:/data \
+	-v /path/to/tls:/certs \
+	-p 50051:50051 \
+	asam-ods-exd-api \
+	python3 external_data_file.py \
+		--use-tls \
+		--tls-cert-file /certs/server.crt \
+		--tls-key-file /certs/server.key
+```
+
+If your deployment requires mutual TLS, also provide `--tls-client-ca-file` and `--require-client-cert`:
+
+```
+docker run \
+	-v /path/to/local/data:/data \
+	-v /path/to/tls:/certs \
+	-p 50051:50051 \
+	asam-ods-exd-api \
+	python3 external_data_file.py \
+		--use-tls \
+		--tls-cert-file /certs/server.crt \
+		--tls-key-file /certs/server.key \
+		--tls-client-ca-file /certs/client-ca.crt \
+		--require-client-cert
+```
+
+Clients must then provide their own certificate and key when connecting.

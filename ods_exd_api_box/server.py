@@ -1,6 +1,8 @@
 """gRPC server for ASAM ODS EXD-API."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import Path
 import argparse
 from concurrent import futures
 import logging
@@ -12,22 +14,59 @@ import grpc
 from . import exd_grpc, ExternalDataReader, FileHandlerRegistry, ExdFileInterface
 
 
-def _get_server_config():
+@dataclass(frozen=True)
+class ServerConfig:
+    bind_address: str
+    port: int
+    max_workers: int
+    max_send_message_length: int
+    max_receive_message_length: int
+    max_concurrent_streams: int | None
+    use_tls: bool
+    tls_cert_file: Path | None
+    tls_key_file: Path | None
+    tls_client_ca_file: Path | None
+    require_client_cert: bool
+
+
+def _get_server_config() -> ServerConfig:
     parser = argparse.ArgumentParser(
         description="ASAM ODS EXD-API gRPC Server")
+    parser.add_argument("--bind-address", type=str,
+                        help="Address to bind gRPC server to", default="[::]")
     parser.add_argument("--port", type=int,
                         help="Port to run gRPC server on", default=50051)
     parser.add_argument("--max-workers", type=int,
                         help="Maximum number of worker threads for the gRPC server",
                         default=2 * multiprocessing.cpu_count())
+    parser.add_argument("--max-concurrent-streams", type=int,
+                        help="Maximum amount of concurrent gRPC streams", default=None)
     parser.add_argument("--max-send-message-length", type=int,
                         help="Maximum send message length in MBytes", default=512)
     parser.add_argument("--max-receive-message-length", type=int,
                         help="Maximum receive message length in MBytes", default=32)
+    parser.add_argument("--use-tls", action="store_true",
+                        help="Serve over TLS/SSL using the provided cert and key")
+    parser.add_argument("--tls-cert-file", type=Path,
+                        help="Path to the PEM encoded server certificate")
+    parser.add_argument("--tls-key-file", type=Path,
+                        help="Path to the PEM encoded server private key")
+    parser.add_argument("--tls-client-ca-file", type=Path,
+                        help="CA bundle that is used to validate client certificates")
+    parser.add_argument("--require-client-cert", action="store_true",
+                        help="Require a client certificate if TLS is enabled")
     parser.add_argument("--verbose", action="store_true",
                         help="Enable verbose logging (DEBUG level)")
 
     args = parser.parse_args()
+
+    if args.require_client_cert and not args.use_tls:
+        parser.error("--require-client-cert requires --use-tls")
+    if args.tls_client_ca_file and not args.use_tls:
+        parser.error("--tls-client-ca-file requires --use-tls")
+    if args.use_tls and (args.tls_cert_file is None or args.tls_key_file is None):
+        parser.error(
+            "--use-tls requires both --tls-cert-file and --tls-key-file")
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(
@@ -36,30 +75,93 @@ def _get_server_config():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    return args.port, args.max_workers, args.max_send_message_length, args.max_receive_message_length
+    return ServerConfig(
+        bind_address=args.bind_address,
+        port=args.port,
+        max_workers=args.max_workers,
+        max_concurrent_streams=args.max_concurrent_streams,
+        max_send_message_length=args.max_send_message_length,
+        max_receive_message_length=args.max_receive_message_length,
+        use_tls=args.use_tls,
+        tls_cert_file=args.tls_cert_file,
+        tls_key_file=args.tls_key_file,
+        tls_client_ca_file=args.tls_client_ca_file,
+        require_client_cert=args.require_client_cert,
+    )
+
+
+# helper utilities for building server options and credentials
+def _build_server_options(config: ServerConfig) -> list[tuple[str, int]]:
+    options: list[tuple[str, int]] = [
+        ("grpc.max_send_message_length",
+         config.max_send_message_length * 1024 * 1024),
+        ("grpc.max_receive_message_length",
+         config.max_receive_message_length * 1024 * 1024),
+    ]
+    if config.max_concurrent_streams is not None:
+        options.append(("grpc.max_concurrent_streams",
+                       config.max_concurrent_streams))
+    return options
+
+
+def _create_tls_credentials(config: ServerConfig) -> grpc.ServerCredentials:
+    cert_path = config.tls_cert_file
+    key_path = config.tls_key_file
+    if cert_path is None or key_path is None:
+        raise ValueError(
+            "TLS credentials require a certificate and private key path")
+
+    with cert_path.open("rb") as certificate_file, key_path.open("rb") as private_key_file:
+        certificate_chain = certificate_file.read()
+        private_key = private_key_file.read()
+
+    root_certificates: bytes | None = None
+    if config.tls_client_ca_file is not None:
+        with config.tls_client_ca_file.open("rb") as ca_file:
+            root_certificates = ca_file.read()
+
+    return grpc.ssl_server_credentials(
+        [(private_key, certificate_chain)],
+        root_certificates=root_certificates,
+        require_client_auth=config.require_client_cert,
+    )
 
 
 def serve():
     """Starts the gRPC server and listens for incoming requests."""
 
-    port, max_workers, max_send_message_length, max_receive_message_length = _get_server_config()
-
+    config = _get_server_config()
+    address = f"{config.bind_address}:{config.port}"
     logging.info(
-        "Starting ASAM ODS EXD API gRPC server at port %s with max workers %s...", port, max_workers)
+        "Starting ASAM ODS EXD API gRPC server at %s with max workers %s...",
+        address,
+        config.max_workers,
+    )
+
     server = grpc.server(
-        futures.ThreadPoolExecutor(
-            max_workers=max_workers),
-        options=[
-            ("grpc.max_send_message_length", max_send_message_length * 1024 * 1024),
-            ("grpc.max_receive_message_length",
-             max_receive_message_length * 1024 * 1024),
-        ])
+        futures.ThreadPoolExecutor(max_workers=config.max_workers),
+        options=_build_server_options(config),
+    )
     exd_grpc.add_ExternalDataReaderServicer_to_server(
         ExternalDataReader(), server)
-    server.add_insecure_port(f"[::]:{port}")
+
+    if config.use_tls:
+        bound_port = server.add_secure_port(
+            address, _create_tls_credentials(config))
+        protocol_note = "TLS"
+    else:
+        bound_port = server.add_insecure_port(address)
+        protocol_note = "insecure"
+
+    if bound_port == 0:
+        raise RuntimeError(f"Failed to bind gRPC port at {address}")
+
     server.start()
     logging.info(
-        "ASAM ODS EXD API gRPC server started, listening on port %s.", port)
+        "ASAM ODS EXD API gRPC server started (%s), listening on %s.",
+        protocol_note,
+        address,
+    )
     server.wait_for_termination()
 
 
