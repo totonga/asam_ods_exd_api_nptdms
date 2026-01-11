@@ -8,7 +8,7 @@ import numpy as np
 
 from nptdms import TdmsFile
 
-from ods_exd_api_box import ExdFileInterface, exd_api, ods  # pylint: disable=import-error
+from ods_exd_api_box import ExdFileInterface, exd_api, ods
 
 
 class ExternalDataFile(ExdFileInterface):
@@ -215,7 +215,7 @@ class ExternalDataFile(ExdFileInterface):
 
 if __name__ == '__main__':
 
-    from ods_exd_api_box import serve_plugin  # pylint: disable=import-error
+    from ods_exd_api_box import serve_plugin
 
     serve_plugin(
         file_type_name="TDMS",
