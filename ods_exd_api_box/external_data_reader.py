@@ -33,13 +33,18 @@ class ExternalDataReader(exd_grpc.ExternalDataReader):
 
     def Open(self, request: exd_api.Identifier, context: grpc.ServicerContext) -> exd_api.Handle:
         """Open a connection to an external data file."""
+        self.log.info("Open request for URL '%s'", request.url)
 
         file_path = Path(self.__get_path(request.url))
         if not file_path.is_file():
+            self.log.error(
+                "File not found: '%s' (resolved path: '%s')", request.url, file_path)
             context.abort(grpc.StatusCode.NOT_FOUND,
                           f"File '{request.url}' not found.")
 
         connection_id = self.__open_file(request)
+        self.log.info(
+            "Successfully opened file '%s' with connection ID '%s'", request.url, connection_id)
 
         return exd_api.Handle(uuid=connection_id)
 
@@ -47,8 +52,10 @@ class ExternalDataReader(exd_grpc.ExternalDataReader):
               request: exd_api.Handle,
               context: grpc.ServicerContext) -> exd_api.Empty:  # pylint: disable=unused-argument
         """Close the connection to an external data file."""
+        self.log.info("Close request for handle '%s'", request.uuid)
 
         self.__close_file(request)
+        self.log.info("Successfully closed connection '%s'", request.uuid)
         return exd_api.Empty()
 
     def GetStructure(
@@ -56,29 +63,48 @@ class ExternalDataReader(exd_grpc.ExternalDataReader):
             request: exd_api.StructureRequest,
             context: grpc.ServicerContext) -> exd_api.StructureResult:
         """Get the structure of the external data file."""
+        self.log.debug("GetStructure request for handle '%s'",
+                       request.handle.uuid)
 
         if request.suppress_channels or request.suppress_attributes or 0 != len(request.channel_names):
+            self.log.error("GetStructure: Unsupported options "
+                           "(suppress_channels=%s, suppress_attributes=%s, channel_names=%s)",
+                           request.suppress_channels, request.suppress_attributes, request.channel_names)
             context.abort(grpc.StatusCode.UNIMPLEMENTED,
                           'Method not implemented!')
 
         file, identifier = self.__get_file(request.handle)
+        self.log.debug("Retrieved file handler for handle '%s'",
+                       request.handle.uuid)
 
         rv = exd_api.StructureResult(identifier=identifier)
         rv.name = Path(identifier.url).name
+        self.log.debug("Filling structure for file '%s'", rv.name)
 
         file.fill_structure(rv)
+        self.log.debug(
+            "Structure filled successfully for handle '%s'", request.handle.uuid)
 
         return rv
 
     def GetValues(self, request: exd_api.ValuesRequest, context: grpc.ServicerContext) -> exd_api.ValuesResult:
         """Get values from the external data file."""
+        self.log.debug("GetValues request for handle '%s', channels: %s",
+                       request.handle.uuid, len(request.channel_ids))
 
         file, _ = self.__get_file(request.handle)
         if file is None:
+            self.log.error("File not found for handle '%s'",
+                           request.handle.uuid)
             context.abort(grpc.StatusCode.NOT_FOUND,
                           f"File for handle '{request.handle.uuid}' not found.")
 
-        return file.get_values(request)
+        self.log.debug("Retrieving values for handle '%s'",
+                       request.handle.uuid)
+        result = file.get_values(request)
+        self.log.debug(
+            "Successfully retrieved values for handle '%s'", request.handle.uuid)
+        return result
 
     def GetValuesEx(self, request: exd_api.ValuesExRequest, context: grpc.ServicerContext) -> exd_api.ValuesExResult:
         """Get values from the external data file with extended options."""
@@ -119,34 +145,58 @@ class ExternalDataReader(exd_grpc.ExternalDataReader):
                     connection_url, identifier.parameters)
                 self.file_map[connection_url] = FileMapEntry(
                     file=file_handle, ref_count=0)
+                self.log.debug("File handler created and added to file_map")
+            else:
+                self.log.debug(
+                    "File '%s' already in file_map, reusing existing handler", connection_url)
             self.file_map[connection_url].ref_count += 1
+            self.log.debug("Incremented ref_count for '%s' to %s", connection_url,
+                           self.file_map[connection_url].ref_count)
             return connection_id
 
     def __get_file(self, handle: exd_api.Handle) -> tuple[ExdFileInterface, exd_api.Identifier]:
         identifier = self.connection_map.get(handle.uuid)
         if identifier is None:
+            self.log.error(
+                "Handle '%s' not found in connection_map", handle.uuid)
             raise KeyError(f"Handle '{handle.uuid}' not found.")
         connection_url = self.__get_path(identifier.url)
         entry = self.file_map.get(connection_url)
         if entry is None:
+            self.log.error("Connection URL '%s' not found in file_map for handle '%s'",
+                           connection_url, handle.uuid)
             raise KeyError(
                 f"Connection URL '{connection_url}' not found.")
         entry.last_access_time = time.time()
+        self.log.debug("Updated last_access_time for handle '%s' (file: '%s')",
+                       handle.uuid, connection_url)
         return entry.file, identifier
 
     def __close_file(self, handle: exd_api.Handle) -> None:
         with self.lock:
             identifier = self.connection_map.get(handle.uuid)
             if identifier is None:
+                self.log.error(
+                    "Handle '%s' not found in connection_map for close", handle.uuid)
                 raise KeyError(f"Handle '{handle.uuid}' not found for close.")
             connection_url = self.__get_path(identifier.url)
             self.connection_map.pop(handle.uuid)
+            self.log.debug(
+                "Removed handle '%s' from connection_map", handle.uuid)
             entry = self.file_map.get(connection_url)
             if entry is None:
+                self.log.error(
+                    "Connection URL '%s' not found in file_map for close", connection_url)
                 raise KeyError(
                     f"Connection URL '{connection_url}' not found for close.")
             if entry.ref_count > 1:
                 entry.ref_count -= 1
+                self.log.debug("Decremented ref_count for '%s' to %s",
+                               connection_url, entry.ref_count)
             else:
+                self.log.info(
+                    "Closing file '%s' (ref_count reached 0)", connection_url)
                 entry.file.close()
                 self.file_map.pop(connection_url)
+                self.log.debug(
+                    "File removed from file_map: '%s'", connection_url)

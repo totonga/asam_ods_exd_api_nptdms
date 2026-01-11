@@ -181,10 +181,10 @@ def _create_health_check_server(config: ServerConfig) -> grpc.Server | None:
     return health_check_server
 
 
-def serve():
+def serve(server_config: ServerConfig | None = None):
     """Starts the gRPC server and listens for incoming requests."""
 
-    config = _get_server_config()
+    config = server_config if server_config is not None else _get_server_config()
     address = f"{config.bind_address}:{config.port}"
     logging.info(
         "Starting ASAM ODS EXD API gRPC server at %s with max workers %s...",
@@ -240,6 +240,11 @@ def serve_plugin(
         file_patterns: List of file extension patterns (e.g., ['*.tdms'])
         factory: Callable that creates ExternalDataFileInterface instances
     """
+    config = _get_server_config()
+
+    logging.info("Registering plugin for file type '%s' with patterns %s",
+                 file_type_name, file_type_file_patterns)
     FileHandlerRegistry.register(
         file_type_name=file_type_name, file_patterns=file_type_file_patterns, factory=file_type_factory)
-    serve()
+    logging.info("Starting gRPC server for plugin '%s'", file_type_name)
+    serve(server_config=config)
