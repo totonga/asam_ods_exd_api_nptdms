@@ -8,7 +8,8 @@ from typing import Any, override
 import numpy as np
 from nptdms import TdmsFile
 
-from ods_exd_api_box import ExdFileInterface, exd_api, ods
+from ods_exd_api_box import ExdFileInterface
+from ods_exd_api_box.proto import exd_api, ods
 
 
 class ExternalDataFile(ExdFileInterface):

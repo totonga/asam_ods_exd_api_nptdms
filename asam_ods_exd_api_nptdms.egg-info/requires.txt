@@ -1,0 +1,11 @@
+ods-exd-api-box<2.0.0,>=1.0.0
+npTDMS<2.0.0,>=1.10.0
+
+[dev]
+coverage>=7.0
+isort>=5.12
+jupyterlab>=4.0
+mypy>=1.5
+types-protobuf>=4.0
+types-grpcio>=1.53
+types-grpcio-health-checking>=1.53

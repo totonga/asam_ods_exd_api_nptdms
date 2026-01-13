@@ -10,18 +10,8 @@ WORKDIR /app
 RUN useradd -ms /bin/bash appuser && chown -R appuser /app
 # Copy source code first (needed for pip install)
 COPY pyproject.toml .
-COPY ods_exd_api_box/ ./ods_exd_api_box/
 # Install required packages
 RUN pip3 install --upgrade pip && pip3 install .
-# Copy ASAM ODS Interface files into the container
-# Download from ASAM ODS GitHub repository
-ADD https://raw.githubusercontent.com/asam-ev/ASAM-ODS-Interfaces/main/ods.proto /app/
-ADD https://raw.githubusercontent.com/asam-ev/ASAM-ODS-Interfaces/main/ods_external_data.proto /app/
-# Use protoc to compile stubs in container
-RUN mkdir -p ods_exd_api_box/proto
-# overwrite existing pregenerated files to ensure compatibility with the used grpcio version
-RUN python3 -m grpc_tools.protoc -I. --python_out=ods_exd_api_box/proto/. ods.proto
-RUN python3 -m grpc_tools.protoc -I. --python_out=ods_exd_api_box/proto/. --grpc_python_out=ods_exd_api_box/proto/. ods_external_data.proto
 # should be copied at the end to avoid unnecessary rebuilds
 COPY external_data_file.py ./
 USER appuser

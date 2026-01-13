@@ -16,9 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "grpcio>=1.76.0,<2.0.0",
-    "grpcio-health-checking>=1.76.0,<2.0.0",
-    "grpcio-tools>=1.76.0,<2.0.0",
+    "ods-exd-api-box>=1.0.0,<2.0.0",
     "npTDMS>=1.10.0,<2.0.0",
 ]
 
@@ -35,12 +33,6 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/totonga/asam_ods_exd_api_nptdms"
-
-[tool.setuptools]
-packages = ["ods_exd_api_box"]
-
-[tool.setuptools.package-data]
-ods_exd_api_box = ["py.typed", "proto/py.typed"]
 
 [tool.pylint.messages_control]
 disable = [
@@ -65,10 +57,6 @@ no_implicit_optional = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "ods_exd_api_box.proto.*"
-ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "ods_pb2"
