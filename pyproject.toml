@@ -16,7 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "ods-exd-api-box>=1.0.0,<2.0.0",
+    "ods-exd-api-box>=1.0.1,<2.0.0",
     "npTDMS>=1.10.0,<2.0.0",
 ]
 

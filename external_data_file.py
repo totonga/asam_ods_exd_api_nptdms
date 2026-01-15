@@ -11,6 +11,8 @@ from nptdms import TdmsFile
 from ods_exd_api_box import ExdFileInterface
 from ods_exd_api_box.proto import exd_api, ods
 
+# pylint: disable=no-member
+
 
 class ExternalDataFile(ExdFileInterface):
     """Class for handling for NI tdms files."""
