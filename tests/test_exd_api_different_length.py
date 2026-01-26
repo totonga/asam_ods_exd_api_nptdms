@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 from google.protobuf.json_format import MessageToJson
 from nptdms import ChannelObject, TdmsWriter
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, exd_api
 
 from external_data_file import ExternalDataFile
-from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, exd_api
 
 
 class TestDifferentLength(unittest.TestCase):
@@ -21,9 +21,7 @@ class TestDifferentLength(unittest.TestCase):
         FileHandlerRegistry.register(file_type_name="test", factory=ExternalDataFile)
 
     def _get_example_file_path(self, file_name):
-        example_file_path = pathlib.Path.joinpath(
-            pathlib.Path(__file__).parent.resolve(), "..", "data", file_name
-        )
+        example_file_path = pathlib.Path.joinpath(pathlib.Path(__file__).parent.resolve(), "..", "data", file_name)
         return pathlib.Path(example_file_path).absolute().resolve().as_uri()
 
     def test_different_length(self):
@@ -31,12 +29,8 @@ class TestDifferentLength(unittest.TestCase):
             file_path = os.path.join(temporary_directory_name, "all_datatypes.tdms")
 
             with TdmsWriter(file_path) as tdms_writer:
-                tdms_writer.write_segment(
-                    [ChannelObject("group_1", "channel_1", np.array([1.1, 1.2], np.float64))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_1", "channel_2", np.array([2.1, 2.2], np.float64))]
-                )
+                tdms_writer.write_segment([ChannelObject("group_1", "channel_1", np.array([1.1, 1.2], np.float64))])
+                tdms_writer.write_segment([ChannelObject("group_1", "channel_2", np.array([2.1, 2.2], np.float64))])
                 tdms_writer.write_segment(
                     [ChannelObject("group_1", "channel_3", np.array([3.1, 3.2, 3.3, 3.4], np.float64))]
                 )
@@ -50,25 +44,17 @@ class TestDifferentLength(unittest.TestCase):
                 tdms_writer.write_segment(
                     [ChannelObject("group_2", "channel_2", np.array([2.1, 2.2, 2.3, 2.4], np.float64))]
                 )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_2", "channel_3", np.array([3.1, 3.2], np.float64))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_2", "channel_4", np.array([4.1, 4.2], np.float64))]
-                )
+                tdms_writer.write_segment([ChannelObject("group_2", "channel_3", np.array([3.1, 3.2], np.float64))])
+                tdms_writer.write_segment([ChannelObject("group_2", "channel_4", np.array([4.1, 4.2], np.float64))])
 
                 tdms_writer.write_segment(
                     [ChannelObject("group_3", "channel_1", np.array([1.1, 1.2, 1.3, 1.4], np.float64))]
                 )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_3", "channel_2", np.array([2.1, 2.2], np.float64))]
-                )
+                tdms_writer.write_segment([ChannelObject("group_3", "channel_2", np.array([2.1, 2.2], np.float64))])
                 tdms_writer.write_segment(
                     [ChannelObject("group_3", "channel_3", np.array([3.1, 3.2, 3.3, 3.4], np.float64))]
                 )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_3", "channel_4", np.array([4.1, 4.2], np.float64))]
-                )
+                tdms_writer.write_segment([ChannelObject("group_3", "channel_4", np.array([4.1, 4.2], np.float64))])
 
                 tdms_writer.write_segment(
                     [ChannelObject("group_4", "channel_1", np.array([1.1, 1.2, 1.3, 1.4], np.float64))]
@@ -84,9 +70,7 @@ class TestDifferentLength(unittest.TestCase):
                 )
 
             service = ExternalDataReader()
-            handle = service.Open(
-                exd_api.Identifier(url=Path(file_path).resolve().as_uri(), parameters=""), None
-            )
+            handle = service.Open(exd_api.Identifier(url=Path(file_path).resolve().as_uri(), parameters=""), None)
             try:
                 structure = service.GetStructure(exd_api.StructureRequest(handle=handle), None)
                 self.log.info(MessageToJson(structure))
