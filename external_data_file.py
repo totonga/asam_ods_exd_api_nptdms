@@ -7,7 +7,6 @@ from typing import Any, override
 
 import numpy as np
 from nptdms import TdmsFile
-
 from ods_exd_api_box import ExdFileInterface, exd_api, ods
 
 
@@ -48,9 +47,7 @@ class ExternalDataFile(ExdFileInterface):
                 number_of_rows = self.__get_channel_length(channel)
                 if number_of_rows not in channels_by_len_dictionary:
                     channels_by_len_dictionary[number_of_rows] = []
-                channels_by_len_dictionary[number_of_rows].append(
-                    {"channel": channel, "channel_id": channel_index}
-                )
+                channels_by_len_dictionary[number_of_rows].append({"channel": channel, "channel_id": channel_index})
 
             group_sub_index = 0
             for number_of_rows, channels_by_len in channels_by_len_dictionary.items():
@@ -72,8 +69,7 @@ class ExternalDataFile(ExdFileInterface):
                     new_channel.unit_string = (
                         channel.properties["unit_string"] if "unit_string" in channel.properties else ""
                     )
-                    self.__add_attributes(
-                        channel.properties, new_channel.attributes)
+                    self.__add_attributes(channel.properties, new_channel.attributes)
 
                     new_group.channels.append(new_channel)
 
@@ -92,12 +88,9 @@ class ExternalDataFile(ExdFileInterface):
 
         group = file.groups()[group_id]
 
-        nr_of_rows = self.__get_channel_length(
-            group.channels()[request.channel_ids[0]])
+        nr_of_rows = self.__get_channel_length(group.channels()[request.channel_ids[0]])
         if request.start >= nr_of_rows:
-            raise ValueError(
-                f"Channel start index {request.start} out of range! Greater equal than {nr_of_rows}."
-            )
+            raise ValueError(f"Channel start index {request.start} out of range! Greater equal than {nr_of_rows}.")
 
         end_index = request.start + request.limit
         if end_index >= nr_of_rows:
@@ -114,50 +107,41 @@ class ExternalDataFile(ExdFileInterface):
             new_channel_values.id = channel_id
             new_channel_values.values.data_type = ods_data_type
             if ods.DataTypeEnum.DT_BYTE == ods_data_type:
-                new_channel_values.values.byte_array.values = channel[request.start: end_index].tobytes(
-                )
+                new_channel_values.values.byte_array.values = channel[request.start : end_index].tobytes()
             elif ods.DataTypeEnum.DT_SHORT == ods_data_type:
-                new_channel_values.values.long_array.values[:
-                                                            ] = channel[request.start: end_index]
+                new_channel_values.values.long_array.values[:] = channel[request.start : end_index]
             elif ods.DataTypeEnum.DT_LONG == ods_data_type:
-                new_channel_values.values.long_array.values[:
-                                                            ] = channel[request.start: end_index]
+                new_channel_values.values.long_array.values[:] = channel[request.start : end_index]
             elif ods.DataTypeEnum.DT_LONGLONG == ods_data_type:
-                new_channel_values.values.longlong_array.values[:
-                                                                ] = channel[request.start: end_index]
+                new_channel_values.values.longlong_array.values[:] = channel[request.start : end_index]
             elif ods.DataTypeEnum.DT_FLOAT == ods_data_type:
-                new_channel_values.values.float_array.values[:
-                                                             ] = channel[request.start: end_index]
+                new_channel_values.values.float_array.values[:] = channel[request.start : end_index]
             elif ods.DataTypeEnum.DT_DOUBLE == ods_data_type:
-                new_channel_values.values.double_array.values[:
-                                                              ] = channel[request.start: end_index]
+                new_channel_values.values.double_array.values[:] = channel[request.start : end_index]
             elif ods.DataTypeEnum.DT_DATE == ods_data_type:
-                datetime_values = channel[request.start: end_index]
+                datetime_values = channel[request.start : end_index]
                 string_values = []
                 for datetime_value in datetime_values:
-                    string_values.append(
-                        self.__to_asam_ods_time(datetime_value))
+                    string_values.append(self.__to_asam_ods_time(datetime_value))
                 new_channel_values.values.string_array.values[:] = string_values
             elif ods.DataTypeEnum.DT_STRING == ods_data_type:
-                new_channel_values.values.string_array.values[:
-                                                              ] = channel[request.start: end_index]
+                new_channel_values.values.string_array.values[:] = channel[request.start : end_index]
             elif ods.DataTypeEnum.DT_COMPLEX == ods_data_type:
-                complex_values = channel[request.start: end_index]
+                complex_values = channel[request.start : end_index]
                 real_values = []
                 for complex_value in complex_values:
                     real_values.append(complex_value.real)
                     real_values.append(complex_value.imag)
                 new_channel_values.values.float_array.values[:] = real_values
             elif ods.DataTypeEnum.DT_DCOMPLEX == ods_data_type:
-                complex_values = channel[request.start: end_index]
+                complex_values = channel[request.start : end_index]
                 real_values = []
                 for complex_value in complex_values:
                     real_values.append(complex_value.real)
                     real_values.append(complex_value.imag)
                 new_channel_values.values.double_array.values[:] = real_values
             else:
-                raise NotImplementedError(
-                    f"Not implemented channel type {ods_data_type}!")
+                raise NotImplementedError(f"Not implemented channel type {ods_data_type}!")
 
             rv.channels.append(new_channel_values)
 
@@ -175,11 +159,9 @@ class ExternalDataFile(ExdFileInterface):
             elif isinstance(value, int):
                 attributes.variables[name].long_array.values.append(value)
             elif np.issubdtype("datetime64", value.dtype):
-                attributes.variables[name].string_array.values.append(
-                    self.__to_asam_ods_time(value))
+                attributes.variables[name].string_array.values.append(self.__to_asam_ods_time(value))
             else:
-                raise ValueError(
-                    f'Attribute "{name}": "{value}" not assignable')
+                raise ValueError(f'Attribute "{name}": "{value}" not assignable')
 
     def __get_channel_length(self, channel):
         return len(channel)
@@ -220,6 +202,4 @@ if __name__ == "__main__":
 
     from ods_exd_api_box import serve_plugin
 
-    serve_plugin(
-        file_type_name="TDMS", file_type_factory=ExternalDataFile.create, file_type_file_patterns=["*.tdms"]
-    )
+    serve_plugin(file_type_name="TDMS", file_type_factory=ExternalDataFile.create, file_type_file_patterns=["*.tdms"])

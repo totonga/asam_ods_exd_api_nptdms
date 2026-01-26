@@ -43,7 +43,7 @@
             }
         }
     },
-    "postCreateCommand": "python -m pip install --upgrade pip && pip install -e '.[dev]'",
+    "postCreateCommand": "python -m pip install --upgrade pip && pip install -e '.[dev]' && mypy --install-types --non-interactive",
     "forwardPorts": [
         8888
     ],

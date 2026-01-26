@@ -9,9 +9,9 @@ from pathlib import Path
 import numpy as np
 from google.protobuf.json_format import MessageToJson
 from nptdms import ChannelObject, TdmsWriter
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, exd_api, ods
 
 from external_data_file import ExternalDataFile
-from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, exd_api, ods
 
 
 class TestDataTypes(unittest.TestCase):
@@ -22,9 +22,7 @@ class TestDataTypes(unittest.TestCase):
         FileHandlerRegistry.register(file_type_name="test", factory=ExternalDataFile)
 
     def _get_example_file_path(self, file_name):
-        example_file_path = pathlib.Path.joinpath(
-            pathlib.Path(__file__).parent.resolve(), "..", "data", file_name
-        )
+        example_file_path = pathlib.Path.joinpath(pathlib.Path(__file__).parent.resolve(), "..", "data", file_name)
         return pathlib.Path(example_file_path).absolute().resolve().as_uri()
 
     def test_datatype(self):
@@ -33,44 +31,20 @@ class TestDataTypes(unittest.TestCase):
 
             with TdmsWriter(file_path) as tdms_writer:
                 tdms_writer.write_segment(
-                    [
-                        ChannelObject(
-                            "group_complex", "complex64_data", np.array([1 + 2j, 3 + 4j], np.complex64)
-                        )
-                    ]
+                    [ChannelObject("group_complex", "complex64_data", np.array([1 + 2j, 3 + 4j], np.complex64))]
                 )
                 tdms_writer.write_segment(
-                    [
-                        ChannelObject(
-                            "group_complex", "complex128_data", np.array([5 + 6j, 7 + 8j], np.complex128)
-                        )
-                    ]
+                    [ChannelObject("group_complex", "complex128_data", np.array([5 + 6j, 7 + 8j], np.complex128))]
                 )
 
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "int8_data", np.array([-2, 4], np.int8))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "uint8_data", np.array([2, 4], np.uint8))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "int16_data", np.array([-2, 4], np.int16))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "uint16_data", np.array([2, 4], np.uint16))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "int32_data", np.array([-2, 4], np.int32))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "uint32_data", np.array([2, 4], np.uint32))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "int64_data", np.array([-2, 4], np.int64))]
-                )
-                tdms_writer.write_segment(
-                    [ChannelObject("group_int", "uint64_data", np.array([2, 4], np.uint64))]
-                )
+                tdms_writer.write_segment([ChannelObject("group_int", "int8_data", np.array([-2, 4], np.int8))])
+                tdms_writer.write_segment([ChannelObject("group_int", "uint8_data", np.array([2, 4], np.uint8))])
+                tdms_writer.write_segment([ChannelObject("group_int", "int16_data", np.array([-2, 4], np.int16))])
+                tdms_writer.write_segment([ChannelObject("group_int", "uint16_data", np.array([2, 4], np.uint16))])
+                tdms_writer.write_segment([ChannelObject("group_int", "int32_data", np.array([-2, 4], np.int32))])
+                tdms_writer.write_segment([ChannelObject("group_int", "uint32_data", np.array([2, 4], np.uint32))])
+                tdms_writer.write_segment([ChannelObject("group_int", "int64_data", np.array([-2, 4], np.int64))])
+                tdms_writer.write_segment([ChannelObject("group_int", "uint64_data", np.array([2, 4], np.uint64))])
 
                 tdms_writer.write_segment(
                     [
@@ -95,9 +69,7 @@ class TestDataTypes(unittest.TestCase):
                 tdms_writer.write_segment([ChannelObject("group_string", "string_data", ["abc", "def"])])
 
             service = ExternalDataReader()
-            handle = service.Open(
-                exd_api.Identifier(url=Path(file_path).resolve().as_uri(), parameters=""), None
-            )
+            handle = service.Open(exd_api.Identifier(url=Path(file_path).resolve().as_uri(), parameters=""), None)
             try:
                 structure = service.GetStructure(exd_api.StructureRequest(handle=handle), None)
                 self.log.info(MessageToJson(structure))

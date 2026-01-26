@@ -3,9 +3,9 @@ import pathlib
 import unittest
 
 from google.protobuf.json_format import MessageToJson
+from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, exd_api, ods
 
 from external_data_file import ExternalDataFile
-from ods_exd_api_box import ExternalDataReader, FileHandlerRegistry, exd_api, ods
 
 
 class TestExdApiEtc(unittest.TestCase):
@@ -16,16 +16,12 @@ class TestExdApiEtc(unittest.TestCase):
         FileHandlerRegistry.register(file_type_name="test", factory=ExternalDataFile)
 
     def _get_example_file_path(self, file_name):
-        example_file_path = pathlib.Path.joinpath(
-            pathlib.Path(__file__).parent.resolve(), "..", "data", file_name
-        )
+        example_file_path = pathlib.Path.joinpath(pathlib.Path(__file__).parent.resolve(), "..", "data", file_name)
         return pathlib.Path(example_file_path).absolute().resolve().as_uri()
 
     def test_file_example(self):
         service = ExternalDataReader()
-        handle = service.Open(
-            exd_api.Identifier(url=self._get_example_file_path("example.tdms"), parameters=""), None
-        )
+        handle = service.Open(exd_api.Identifier(url=self._get_example_file_path("example.tdms"), parameters=""), None)
         try:
             structure = service.GetStructure(exd_api.StructureRequest(handle=handle), None)
             self.log.info(MessageToJson(structure))
@@ -47,13 +43,9 @@ class TestExdApiEtc(unittest.TestCase):
             self.assertEqual(len(values.channels), 2)
             self.log.info(MessageToJson(values))
             self.assertEqual(values.channels[0].values.data_type, ods.DataTypeEnum.DT_FLOAT)
-            self.assertSequenceEqual(
-                values.channels[0].values.float_array.values, [500.0, 700.0, 900.0, 1100.0]
-            )
+            self.assertSequenceEqual(values.channels[0].values.float_array.values, [500.0, 700.0, 900.0, 1100.0])
             self.assertEqual(values.channels[1].values.data_type, ods.DataTypeEnum.DT_FLOAT)
-            self.assertSequenceEqual(
-                values.channels[1].values.float_array.values, [150.0, 160.0, 170.0, 180.0]
-            )
+            self.assertSequenceEqual(values.channels[1].values.float_array.values, [150.0, 160.0, 170.0, 180.0])
 
             values = service.GetValues(
                 exd_api.ValuesRequest(handle=handle, group_id=1, channel_ids=[0, 1], start=0, limit=4), None
@@ -63,9 +55,7 @@ class TestExdApiEtc(unittest.TestCase):
             self.assertEqual(values.channels[0].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
             self.assertSequenceEqual(values.channels[0].values.double_array.values, [1.0, 2.0, 3.0, 4.0])
             self.assertEqual(values.channels[1].values.data_type, ods.DataTypeEnum.DT_DOUBLE)
-            self.assertSequenceEqual(
-                values.channels[1].values.double_array.values, [500.0, 700.0, 900.0, 1100.0]
-            )
+            self.assertSequenceEqual(values.channels[1].values.double_array.values, [500.0, 700.0, 900.0, 1100.0])
 
         finally:
             service.Close(handle, None)
