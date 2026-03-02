@@ -16,7 +16,7 @@ classifiers = [
 ]
 dependencies = [
     "npTDMS>=1.10.0,<2.0.0",
-    "ods-exd-api-box>=1.3.0,<2.0.0"
+    "ods-exd-api-box>=1.5.0,<2.0.0"
 ]
 
 [project.optional-dependencies]
